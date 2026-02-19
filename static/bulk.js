@@ -184,16 +184,18 @@ function insertImage() {
     }
 }
 
-// Sync rich editor -> html editor
+// Pull: copy rich editor HTML into the raw HTML textarea
 function syncHtmlEditor() {
-    const html = document.getElementById('richEditor').innerHTML;
-    document.getElementById('htmlEditor').value = html;
+    document.getElementById('htmlEditor').value = document.getElementById('richEditor').innerHTML;
 }
 
-// Apply raw HTML back to rich editor
+function pullHtmlFromEditor() {
+    syncHtmlEditor();
+}
+
+// Push: apply raw HTML textarea content back into the visual editor
 function applyHtmlToEditor() {
-    const html = document.getElementById('htmlEditor').value;
-    document.getElementById('richEditor').innerHTML = html;
+    document.getElementById('richEditor').innerHTML = document.getElementById('htmlEditor').value;
     updatePreview();
 }
 
