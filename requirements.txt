@@ -1,0 +1,6 @@
+flask
+redis
+flask-session
+cryptography
+python-dotenv
+requests
