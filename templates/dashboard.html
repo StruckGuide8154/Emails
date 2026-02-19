@@ -26,16 +26,16 @@
     </div>
 
     <div class="container">
-        <div class="main-content">
+        <div class="main-content" style="grid-template-columns: 200px 350px 1fr;">
+            <!-- Sidebar -->
             <div class="glass sidebar">
-                <div class="menu-item active">
+                <div class="menu-item active" onclick="switchFolder('inbox', this)">
                     <i class="ri-inbox-line"></i> Inbox
                 </div>
-                <!-- Future features -->
-                <div class="menu-item">
+                <div class="menu-item" onclick="switchFolder('sent', this)">
                     <i class="ri-send-plane-line"></i> Sent
                 </div>
-                <div class="menu-item">
+                <div class="menu-item" onclick="switchFolder('drafts', this)">
                     <i class="ri-draft-line"></i> Drafts
                 </div>
 
@@ -44,19 +44,29 @@
                 </button>
             </div>
 
-            <div class="glass email-view">
+            <!-- Email List -->
+            <div class="glass email-view-container">
                 <div
                     style="padding: 15px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin: 0;">Inbox</h3>
-                    <button class="glass-btn" onclick="loadEmails()" style="padding: 5px 10px;">
+                    <h3 style="margin: 0;" id="folderTitle">Inbox</h3>
+                    <button class="glass-btn" onclick="refreshEmails()" style="padding: 5px 10px;">
                         <i class="ri-refresh-line"></i>
                     </button>
                 </div>
+                <!-- Independent scroll for list -->
                 <div id="emailList" class="email-list">
                     <!-- Emails will be loaded here -->
-                    <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
-                        Loading secure messages... <div class="loading"></div>
-                    </div>
+                </div>
+                <div id="loadMoreTrigger" style="text-align: center; padding: 10px;">
+                    <span style="font-size: 0.8rem; opacity: 0.5;">Load More</span>
+                </div>
+            </div>
+
+            <!-- Email Detail -->
+            <div class="glass email-detail-view" id="emailDetailView">
+                <div style="text-align: center; margin-top: 100px; opacity: 0.5;">
+                    <i class="ri-mail-open-line" style="font-size: 3rem;"></i>
+                    <p>Select an email to read</p>
                 </div>
             </div>
         </div>
@@ -66,14 +76,25 @@
     <div class="modal-overlay" id="composeModal">
         <div class="glass modal-content">
             <i class="ri-close-line close-modal" id="closeModal"></i>
-            <h2>Compose Secure Email</h2>
+            <h2>Compose Email</h2>
             <form id="composeForm" class="compose-form">
-                <input type="email" id="toEmail" class="glass-input" placeholder="To:" required>
-                <input type="text" id="subject" class="glass-input" placeholder="Subject:" required>
-                <textarea id="body" class="glass-input" placeholder="Message content..." required></textarea>
+                <input type="email" id="toEmail" name="to" class="glass-input" placeholder="To:" required>
+                <input type="text" id="subject" name="subject" class="glass-input" placeholder="Subject:" required>
+                <textarea id="body" name="body" class="glass-input" placeholder="Message content..."
+                    required></textarea>
+
+                <!-- File Input -->
+                <div style="border: 1px dashed var(--glass-border); padding: 10px; border-radius: 8px;">
+                    <label for="attachments" style="cursor: pointer; font-size: 0.9rem; color: var(--text-secondary);">
+                        <i class="ri-attachment-line"></i> Add Attachments
+                    </label>
+                    <input type="file" id="attachments" name="attachments" multiple
+                        style="display: block; margin-top: 5px; color: white;">
+                </div>
+
                 <div style="display: flex; justify-content: flex-end;">
                     <button type="submit" class="glass-btn">
-                        Send Encrypted <i class="ri-send-plane-fill"></i>
+                        Send <i class="ri-send-plane-fill"></i>
                     </button>
                 </div>
             </form>
