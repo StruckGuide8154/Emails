@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,628 +10,442 @@
         .bulk-layout {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            height: calc(100vh - 120px);
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
         }
 
         .editor-panel {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 14px;
             overflow-y: auto;
             padding: 20px;
+            min-height: 0;
         }
 
         .preview-panel {
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            padding: 0;
+            min-height: 0;
         }
 
-        /* CSV Upload */
+        /* CSV */
         .csv-upload-zone {
             border: 2px dashed var(--glass-border);
-            border-radius: 12px;
-            padding: 25px;
+            border-radius: var(--radius);
+            padding: 24px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            flex-shrink: 0;
         }
-
-        .csv-upload-zone:hover,
-        .csv-upload-zone.dragover {
+        .csv-upload-zone:hover, .csv-upload-zone.dragover {
             border-color: var(--primary-color);
-            background: rgba(99, 102, 241, 0.1);
+            background: rgba(99, 102, 241, 0.08);
         }
-
         .csv-upload-zone.loaded {
             border-color: var(--success);
             border-style: solid;
+            padding: 16px;
         }
 
-        /* Header mapping */
         .mapping-row {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 8px 0;
+            padding: 6px 0;
         }
-
-        .mapping-row select {
+        .mapping-row select, .toolbar-select {
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--glass-border);
             color: white;
-            padding: 6px 10px;
-            border-radius: 6px;
+            padding: 5px 10px;
+            border-radius: var(--radius-xs);
             font-family: inherit;
+            font-size: 0.8rem;
         }
-
-        .mapping-row select option {
-            background: #1a1a2e;
-        }
-
-        .mapping-label {
-            min-width: 80px;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-        }
+        .mapping-row select option, .toolbar-select option { background: #1a1a2e; }
+        .mapping-label { min-width: 80px; color: var(--text-secondary); font-size: 0.85rem; }
 
         /* Toolbar */
         .editor-toolbar {
             display: flex;
             flex-wrap: wrap;
-            gap: 4px;
+            gap: 3px;
             padding: 8px;
-            border-bottom: 1px solid var(--glass-border);
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 8px 8px 0 0;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+            border: 1px solid var(--glass-border);
+            border-bottom: none;
         }
-
         .toolbar-btn {
             background: none;
             border: 1px solid transparent;
             color: var(--text-secondary);
-            padding: 6px 8px;
+            padding: 5px 7px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s;
+            font-size: 0.85rem;
+            transition: all 0.15s;
         }
-
-        .toolbar-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-
-        .toolbar-btn.active {
-            background: rgba(99, 102, 241, 0.3);
-            color: white;
-            border-color: var(--primary-color);
-        }
-
-        .toolbar-sep {
-            width: 1px;
-            background: var(--glass-border);
-            margin: 2px 4px;
-        }
-
-        .toolbar-select {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--glass-border);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-family: inherit;
-            font-size: 0.8rem;
-        }
-
-        .toolbar-select option {
-            background: #1a1a2e;
-        }
-
+        .toolbar-btn:hover { background: rgba(255,255,255,0.08); color: white; }
+        .toolbar-sep { width: 1px; background: var(--glass-border); margin: 2px 3px; }
         .toolbar-color {
-            width: 28px;
-            height: 28px;
+            width: 26px; height: 26px;
             border: 1px solid var(--glass-border);
-            border-radius: 4px;
-            padding: 0;
-            cursor: pointer;
-            background: none;
+            border-radius: 4px; padding: 0; cursor: pointer; background: none;
         }
 
-        /* Rich text editor */
+        /* Rich editor */
         .rich-editor {
-            min-height: 250px;
-            padding: 15px;
+            min-height: 200px;
+            padding: 14px;
             border: 1px solid var(--glass-border);
             border-top: none;
-            border-radius: 0 0 8px 8px;
+            border-radius: 0 0 var(--radius-sm) var(--radius-sm);
             background: rgba(0, 0, 0, 0.15);
             color: white;
             line-height: 1.6;
             overflow-y: auto;
             outline: none;
+            font-size: 0.9rem;
         }
-
-        .rich-editor:focus {
-            border-color: var(--primary-color);
-        }
-
+        .rich-editor:focus { border-color: var(--primary-color); }
         .rich-editor:empty::before {
             content: 'Write your email here... Use {{variable}} for personalization';
-            color: rgba(255, 255, 255, 0.3);
+            color: rgba(255,255,255,0.25);
         }
 
-        /* Advanced HTML dropdown */
+        /* Advanced HTML — clearly visible toggle */
         .advanced-section {
             border: 1px solid var(--glass-border);
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             overflow: hidden;
+            flex-shrink: 0;
         }
-
         .advanced-toggle {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 15px;
+            padding: 12px 16px;
             cursor: pointer;
-            background: rgba(0, 0, 0, 0.2);
-            color: var(--text-secondary);
+            background: rgba(99, 102, 241, 0.08);
+            border-left: 3px solid var(--primary-color);
+            color: var(--accent-color);
             font-size: 0.85rem;
+            font-weight: 500;
             transition: all 0.2s;
+            user-select: none;
         }
-
         .advanced-toggle:hover {
+            background: rgba(99, 102, 241, 0.15);
             color: white;
-            background: rgba(0, 0, 0, 0.3);
         }
-
-        .advanced-toggle i {
-            transition: transform 0.3s;
-        }
-
-        .advanced-toggle.open i {
-            transform: rotate(180deg);
-        }
-
-        .advanced-body {
-            display: none;
-            padding: 0;
-        }
-
-        .advanced-body.open {
-            display: block;
-        }
-
+        .advanced-toggle .toggle-icon { transition: transform 0.3s; }
+        .advanced-toggle.open .toggle-icon { transform: rotate(180deg); }
+        .advanced-body { display: none; }
+        .advanced-body.open { display: block; }
         .html-editor {
             width: 100%;
-            min-height: 200px;
+            min-height: 180px;
             background: rgba(0, 0, 0, 0.4);
             color: #a5f3a3;
             border: none;
-            padding: 15px;
+            padding: 14px;
             font-family: 'Courier New', monospace;
-            font-size: 0.85rem;
+            font-size: 0.83rem;
             resize: vertical;
             box-sizing: border-box;
             outline: none;
             line-height: 1.5;
         }
 
-        /* Gmail Preview */
+        /* Preview tabs */
         .preview-tabs {
             display: flex;
             border-bottom: 1px solid var(--glass-border);
+            flex-shrink: 0;
         }
-
         .preview-tab {
-            flex: 1;
-            padding: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            background: none;
-            border: none;
-            font-family: inherit;
+            flex: 1; padding: 10px; text-align: center;
+            cursor: pointer; font-size: 0.85rem;
+            color: var(--text-secondary); background: none;
+            border: none; font-family: inherit; transition: all 0.15s;
         }
-
         .preview-tab.active {
             color: white;
             border-bottom: 2px solid var(--primary-color);
-            background: rgba(99, 102, 241, 0.1);
+            background: rgba(99, 102, 241, 0.08);
         }
-
-        .preview-frame-wrap {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0;
-        }
-
-        .gmail-preview {
-            width: 100%;
-            min-height: 100%;
-            border: none;
-        }
+        .preview-frame-wrap { flex: 1; overflow-y: auto; min-height: 0; }
+        .gmail-preview { width: 100%; height: 100%; min-height: 100%; border: none; }
 
         /* Variable chips */
-        .var-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-
+        .var-chips { display: flex; flex-wrap: wrap; gap: 6px; }
         .var-chip {
-            background: rgba(99, 102, 241, 0.2);
-            border: 1px solid rgba(99, 102, 241, 0.4);
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            color: var(--accent-color);
-            transition: all 0.2s;
+            background: rgba(99,102,241,0.15);
+            border: 1px solid rgba(99,102,241,0.3);
+            padding: 3px 10px; border-radius: 12px;
+            font-size: 0.75rem; cursor: pointer;
+            color: var(--accent-color); transition: all 0.15s;
         }
+        .var-chip:hover { background: rgba(99,102,241,0.3); color: white; }
 
-        .var-chip:hover {
-            background: rgba(99, 102, 241, 0.4);
-            color: white;
-        }
-
-        /* Progress bar */
-        .send-progress {
-            display: none;
-            margin-top: 10px;
-        }
-
-        .progress-bar {
-            height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            overflow: hidden;
-        }
-
+        /* Progress */
+        .send-progress { display: none; margin-top: 8px; }
+        .progress-bar { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
         .progress-fill {
-            height: 100%;
+            height: 100%; width: 0%;
             background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
-            border-radius: 3px;
-            transition: width 0.3s;
-            width: 0%;
+            border-radius: 3px; transition: width 0.3s;
         }
+        .progress-text { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
 
-        .progress-text {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-top: 6px;
-        }
-
-        /* Status log */
         .send-log {
-            max-height: 150px;
-            overflow-y: auto;
-            font-size: 0.8rem;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
-            display: none;
-            margin-top: 10px;
+            max-height: 140px; overflow-y: auto;
+            font-size: 0.8rem; padding: 10px;
+            background: rgba(0,0,0,0.2); border-radius: var(--radius-sm);
+            display: none; margin-top: 8px;
         }
+        .log-entry { padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .log-sent { color: var(--success); }
+        .log-failed { color: var(--error); }
+        .log-skipped { color: var(--text-secondary); }
 
-        .log-entry {
-            padding: 3px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .log-sent {
-            color: var(--success);
-        }
-
-        .log-failed {
-            color: var(--error);
-        }
-
-        .log-skipped {
-            color: var(--text-secondary);
-        }
-
-        /* Docs panel */
+        /* Docs slide-over */
         .docs-overlay {
-            position: fixed;
-            top: 0;
-            right: -400px;
-            width: 400px;
-            height: 100vh;
-            background: rgba(15, 15, 19, 0.98);
+            position: fixed; top: 0; right: -420px; width: 420px;
+            height: 100vh; background: rgba(15,15,19,0.97);
             backdrop-filter: blur(20px);
             border-left: 1px solid var(--glass-border);
-            z-index: 1001;
-            transition: right 0.3s;
-            overflow-y: auto;
-            padding: 30px;
-            box-sizing: border-box;
+            z-index: 1001; transition: right 0.3s;
+            overflow-y: auto; padding: 28px; box-sizing: border-box;
         }
-
-        .docs-overlay.open {
-            right: 0;
-        }
-
-        .docs-overlay h3 {
-            margin-top: 25px;
-            color: var(--accent-color);
-        }
-
+        .docs-overlay.open { right: 0; }
+        .docs-overlay h3 { margin-top: 20px; color: var(--accent-color); font-size: 1rem; }
+        .docs-overlay p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; margin: 8px 0; }
         .docs-overlay code {
-            background: rgba(99, 102, 241, 0.2);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.85rem;
+            background: rgba(99,102,241,0.15); padding: 2px 7px;
+            border-radius: 4px; font-size: 0.83rem;
         }
-
         .docs-overlay pre {
-            background: rgba(0, 0, 0, 0.4);
-            padding: 15px;
-            border-radius: 8px;
-            overflow-x: auto;
-            font-size: 0.8rem;
-            line-height: 1.5;
+            background: rgba(0,0,0,0.35); padding: 14px;
+            border-radius: var(--radius-sm); overflow-x: auto;
+            font-size: 0.8rem; line-height: 1.5; color: #a5f3a3;
         }
-
+        .docs-overlay ul { padding-left: 18px; font-size: 0.85rem; color: var(--text-secondary); }
+        .docs-overlay li { margin: 4px 0; }
         .docs-backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            display: none;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            z-index: 1000; display: none;
         }
-
-        .docs-backdrop.open {
-            display: block;
-        }
+        .docs-backdrop.open { display: block; }
 
         /* Section labels */
         .section-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
+            font-size: 0.7rem; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--text-secondary);
         }
-
         .csv-info {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-size: 0.85rem; color: var(--text-secondary);
+            display: flex; align-items: center; gap: 8px;
         }
-
-        .csv-info strong {
-            color: white;
-        }
-
-        /* Recipient count badge */
         .recipient-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            background: rgba(16, 185, 129, 0.2);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            color: var(--success);
+            display: inline-flex; align-items: center; gap: 4px;
+            background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.25);
+            padding: 3px 10px; border-radius: 20px;
+            font-size: 0.8rem; color: var(--success);
         }
     </style>
 </head>
-
 <body>
-    <div class="dashboard-header glass" style="border-radius: 0; border-left: 0; border-right: 0; border-top: 0;">
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <a href="/dashboard" class="glass-btn" style="padding: 5px 12px; font-size: 0.85rem; text-decoration: none;">
-                <i class="ri-arrow-left-line"></i>
-            </a>
-            <div class="logo" style="font-size: 1.5rem;">
-                <i class="ri-mail-send-line"></i> Bulk Send
+    <div class="dash-shell">
+        <header class="dash-header glass">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <a href="/dashboard" class="glass-btn glass-btn-sm"><i class="ri-arrow-left-line"></i></a>
+                <div class="logo"><i class="ri-mail-send-line"></i> Bulk Send</div>
             </div>
-        </div>
-        <div class="user-info">
-            <button class="glass-btn" onclick="openDocs()" style="padding: 5px 15px; font-size: 0.85rem;">
-                <i class="ri-book-2-line"></i> Docs
-            </button>
-            <span style="color: var(--text-secondary)">{{ email }}</span>
-            <div class="avatar">{{ email[0].upper() }}</div>
-        </div>
-    </div>
+            <div class="user-info">
+                <button class="glass-btn glass-btn-sm" onclick="openDocs()"><i class="ri-book-2-line"></i> Docs</button>
+                <span class="text-muted text-sm">{{ email }}</span>
+                <div class="avatar">{{ email[0].upper() }}</div>
+            </div>
+        </header>
 
-    <div class="container" style="max-width: 1600px;">
-        <div class="bulk-layout">
-            <!-- Left: Editor Panel -->
-            <div class="glass editor-panel">
-                <!-- CSV Upload -->
-                <div class="section-label">1. Upload Recipients</div>
-                <div class="csv-upload-zone" id="csvZone">
-                    <input type="file" id="csvFile" accept=".csv" style="display: none;">
-                    <i class="ri-upload-cloud-2-line" style="font-size: 2rem; color: var(--accent-color);"></i>
-                    <p style="margin: 8px 0 0; color: var(--text-secondary);">
-                        Click or drag a CSV file here
-                    </p>
-                </div>
+        <div style="flex:1; min-height:0; overflow:hidden; padding:12px;">
+            <div class="bulk-layout" style="height:100%;">
+                <!-- Left: Editor -->
+                <div class="glass editor-panel">
+                    <!-- CSV Upload -->
+                    <div class="section-label">1. Upload Recipients</div>
+                    <div class="csv-upload-zone" id="csvZone">
+                        <input type="file" id="csvFile" accept=".csv" style="display: none;">
+                        <i class="ri-upload-cloud-2-line" style="font-size: 1.8rem; color: var(--accent-color);"></i>
+                        <p style="margin: 6px 0 0; color: var(--text-secondary); font-size: 0.85rem;">
+                            Click or drag a CSV file here
+                        </p>
+                    </div>
 
-                <!-- CSV Info & Mapping (hidden until CSV loaded) -->
-                <div id="csvMappingSection" style="display: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div class="csv-info">
-                            <i class="ri-file-text-line"></i>
-                            <span id="csvFileName"></span> &mdash;
-                            <span class="recipient-badge"><i class="ri-user-line"></i> <span id="recipientCount">0</span> recipients</span>
+                    <!-- Mapping (hidden until CSV loaded) -->
+                    <div id="csvMappingSection" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="csv-info">
+                                <i class="ri-file-text-line"></i>
+                                <span id="csvFileName"></span> &mdash;
+                                <span class="recipient-badge"><i class="ri-user-line"></i> <span id="recipientCount">0</span></span>
+                            </div>
+                            <button class="glass-btn glass-btn-sm" onclick="clearCsv()"><i class="ri-close-line"></i> Clear</button>
                         </div>
-                        <button class="glass-btn" onclick="clearCsv()" style="padding: 3px 10px; font-size: 0.75rem;">
-                            <i class="ri-close-line"></i> Clear
+                        <div class="section-label" style="margin-top: 12px;">Map Email Column</div>
+                        <div class="mapping-row">
+                            <span class="mapping-label">Email field:</span>
+                            <select id="emailColumnSelect" class="toolbar-select" style="flex: 1;"></select>
+                        </div>
+                        <div class="section-label" style="margin-top: 8px;">Available Variables</div>
+                        <div class="var-chips" id="varChips"></div>
+                    </div>
+
+                    <!-- Subject -->
+                    <div class="section-label">2. Subject Line</div>
+                    <input type="text" id="subjectInput" class="glass-input" placeholder="Subject: e.g. Hey {{name}}, you're invited!">
+
+                    <!-- Rich Text Editor -->
+                    <div class="section-label">3. Email Body</div>
+                    <div>
+                        <div class="editor-toolbar">
+                            <select class="toolbar-select" onchange="execFormat('formatBlock', this.value); this.selectedIndex=0;">
+                                <option value="" disabled selected>Format</option>
+                                <option value="h1">Heading 1</option>
+                                <option value="h2">Heading 2</option>
+                                <option value="h3">Heading 3</option>
+                                <option value="p">Paragraph</option>
+                            </select>
+                            <select class="toolbar-select" onchange="execFontSize(this.value); this.selectedIndex=0;">
+                                <option value="" disabled selected>Size</option>
+                                <option value="1">Small</option>
+                                <option value="3">Normal</option>
+                                <option value="5">Large</option>
+                                <option value="7">Huge</option>
+                            </select>
+                            <div class="toolbar-sep"></div>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('bold')" title="Bold"><i class="ri-bold"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('italic')" title="Italic"><i class="ri-italic"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('underline')" title="Underline"><i class="ri-underline"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('strikeThrough')" title="Strikethrough"><i class="ri-strikethrough"></i></button>
+                            <div class="toolbar-sep"></div>
+                            <input type="color" class="toolbar-color" value="#ffffff" onchange="execFormat('foreColor', this.value)" title="Text Color">
+                            <input type="color" class="toolbar-color" value="#000000" onchange="execFormat('hiliteColor', this.value)" title="Highlight">
+                            <div class="toolbar-sep"></div>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('justifyLeft')" title="Align Left"><i class="ri-align-left"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('justifyCenter')" title="Center"><i class="ri-align-center"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('justifyRight')" title="Align Right"><i class="ri-align-right"></i></button>
+                            <div class="toolbar-sep"></div>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('insertUnorderedList')" title="Bullet List"><i class="ri-list-unordered"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('insertOrderedList')" title="Numbered List"><i class="ri-list-ordered"></i></button>
+                            <div class="toolbar-sep"></div>
+                            <button type="button" class="toolbar-btn" onclick="insertLink()" title="Insert Link"><i class="ri-link"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="insertImage()" title="Image"><i class="ri-image-line"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('removeFormat')" title="Clear Format"><i class="ri-format-clear"></i></button>
+                        </div>
+                        <div class="rich-editor" id="richEditor" contenteditable="true"></div>
+                    </div>
+
+                    <!-- Advanced HTML — clearly styled toggle -->
+                    <div class="advanced-section">
+                        <div class="advanced-toggle" id="advancedToggle">
+                            <span><i class="ri-code-s-slash-line"></i> Advanced: Edit Raw HTML</span>
+                            <i class="ri-arrow-down-s-line toggle-icon"></i>
+                        </div>
+                        <div class="advanced-body" id="advancedBody">
+                            <textarea class="html-editor" id="htmlEditor" spellcheck="false" placeholder="Paste or write raw HTML here..."></textarea>
+                            <div style="padding: 8px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--glass-border);">
+                                <button class="glass-btn glass-btn-sm" onclick="pullHtmlFromEditor()">
+                                    <i class="ri-download-line"></i> Pull from Editor
+                                </button>
+                                <button class="glass-btn glass-btn-sm" onclick="applyHtmlToEditor()">
+                                    <i class="ri-upload-line"></i> Push to Editor
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Send -->
+                    <div style="display: flex; gap: 10px; align-items: center; flex-shrink: 0;">
+                        <button class="glass-btn" id="sendBulkBtn" onclick="startBulkSend()" style="padding: 10px 28px; font-size: 0.95rem;">
+                            <i class="ri-send-plane-fill"></i> Send to All Recipients
                         </button>
                     </div>
 
-                    <div class="section-label" style="margin-top: 15px;">Map Email Column</div>
-                    <div class="mapping-row">
-                        <span class="mapping-label">Email field:</span>
-                        <select id="emailColumnSelect" class="toolbar-select" style="flex: 1;"></select>
+                    <div class="send-progress" id="sendProgress">
+                        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                        <div class="progress-text" id="progressText">Sending 0/0...</div>
                     </div>
-
-                    <div class="section-label" style="margin-top: 10px;">Available Variables</div>
-                    <div class="var-chips" id="varChips"></div>
+                    <div class="send-log" id="sendLog"></div>
                 </div>
 
-                <!-- Subject -->
-                <div class="section-label" style="margin-top: 5px;">2. Subject Line</div>
-                <input type="text" id="subjectInput" class="glass-input" placeholder="Subject: e.g. Hey {{name}}, you're invited!">
-
-                <!-- Rich Text Editor -->
-                <div class="section-label">3. Email Body</div>
-                <div>
-                    <div class="editor-toolbar" id="editorToolbar">
-                        <select class="toolbar-select" onchange="execFormat('formatBlock', this.value); this.selectedIndex=0;">
-                            <option value="" disabled selected>Format</option>
-                            <option value="h1">Heading 1</option>
-                            <option value="h2">Heading 2</option>
-                            <option value="h3">Heading 3</option>
-                            <option value="p">Paragraph</option>
-                        </select>
-                        <select class="toolbar-select" onchange="execFontSize(this.value); this.selectedIndex=0;">
-                            <option value="" disabled selected>Size</option>
-                            <option value="1">Small</option>
-                            <option value="3">Normal</option>
-                            <option value="5">Large</option>
-                            <option value="7">Huge</option>
-                        </select>
-                        <div class="toolbar-sep"></div>
-                        <button type="button" class="toolbar-btn" onclick="execCmd('bold')" title="Bold"><i class="ri-bold"></i></button>
-                        <button type="button" class="toolbar-btn" onclick="execCmd('italic')" title="Italic"><i class="ri-italic"></i></button>
-                        <button type="button" class="toolbar-btn" onclick="execCmd('underline')" title="Underline"><i class="ri-underline"></i></button>
-                        <button type="button" class="toolbar-btn" onclick="execCmd('strikeThrough')" title="Strikethrough"><i class="ri-strikethrough"></i></button>
-                        <div class="toolbar-sep"></div>
-                        <input type="color" class="toolbar-color" value="#ffffff" onchange="execFormat('foreColor', this.value)" title="Text Color">
-                        <input type="color" class="toolbar-color" value="#000000" onchange="execFormat('hiliteColor', this.value)" title="Highlight">
-                        <div class="toolbar-sep"></div>
-                        <button type="button" class="toolbar-btn" onclick="execCmd('justifyLeft')" title="Align Left"><i class="ri-align-left"></i></button>
-                        <button type="button" class="toolbar-btn" onclick="execCmd('justifyCenter')" title="Align Center"><i class="ri-align-center"></i></button>
-                        <button type="button" class="toolbar-btn" onclick="execCmd('justifyRight')" title="Align Right"><i class="ri-align-right"></i></button>
-                        <div class="toolbar-sep"></div>
-                        <button type="button" class="toolbar-btn" onclick="execCmd('insertUnorderedList')" title="Bullet List"><i class="ri-list-unordered"></i></button>
-                        <button type="button" class="toolbar-btn" onclick="execCmd('insertOrderedList')" title="Numbered List"><i class="ri-list-ordered"></i></button>
-                        <div class="toolbar-sep"></div>
-                        <button type="button" class="toolbar-btn" onclick="insertLink()" title="Insert Link"><i class="ri-link"></i></button>
-                        <button type="button" class="toolbar-btn" onclick="insertImage()" title="Insert Image"><i class="ri-image-line"></i></button>
-                        <button type="button" class="toolbar-btn" onclick="execCmd('removeFormat')" title="Clear Formatting"><i class="ri-format-clear"></i></button>
+                <!-- Right: Preview -->
+                <div class="glass preview-panel">
+                    <div class="preview-tabs">
+                        <button class="preview-tab active" onclick="setPreviewMode('light', this)">
+                            <i class="ri-sun-line"></i> Gmail Light
+                        </button>
+                        <button class="preview-tab" onclick="setPreviewMode('dark', this)">
+                            <i class="ri-moon-line"></i> Gmail Dark
+                        </button>
                     </div>
-                    <div class="rich-editor" id="richEditor" contenteditable="true"></div>
-                </div>
-
-                <!-- Advanced HTML -->
-                <div class="advanced-section">
-                    <div class="advanced-toggle" id="advancedToggle">
-                        <span><i class="ri-code-s-slash-line"></i> Advanced: Edit Raw HTML</span>
-                        <i class="ri-arrow-down-s-line"></i>
+                    <div style="padding: 10px 14px; border-bottom: 1px solid var(--glass-border); font-size: 0.8rem; color: var(--text-secondary); flex-shrink: 0;">
+                        Live preview — shows first recipient's data
                     </div>
-                    <div class="advanced-body" id="advancedBody">
-                        <textarea class="html-editor" id="htmlEditor" spellcheck="false"></textarea>
-                        <div style="padding: 8px; display: flex; gap: 8px; justify-content: flex-end;">
-                            <button class="glass-btn" onclick="applyHtmlToEditor()" style="padding: 4px 12px; font-size: 0.8rem;">
-                                Apply HTML to Editor
-                            </button>
-                        </div>
+                    <div class="preview-frame-wrap">
+                        <iframe id="previewFrame" class="gmail-preview"></iframe>
                     </div>
-                </div>
-
-                <!-- Send -->
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <button class="glass-btn" id="sendBulkBtn" onclick="startBulkSend()" style="padding: 12px 30px; font-size: 1rem;">
-                        <i class="ri-send-plane-fill"></i> Send to All Recipients
-                    </button>
-                </div>
-
-                <div class="send-progress" id="sendProgress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <div class="progress-text" id="progressText">Sending 0/0...</div>
-                </div>
-                <div class="send-log" id="sendLog"></div>
-            </div>
-
-            <!-- Right: Preview Panel -->
-            <div class="glass preview-panel">
-                <div class="preview-tabs">
-                    <button class="preview-tab active" onclick="setPreviewMode('light', this)">
-                        <i class="ri-sun-line"></i> Gmail Light
-                    </button>
-                    <button class="preview-tab" onclick="setPreviewMode('dark', this)">
-                        <i class="ri-moon-line"></i> Gmail Dark
-                    </button>
-                </div>
-                <div style="padding: 12px 15px; border-bottom: 1px solid var(--glass-border); font-size: 0.85rem; color: var(--text-secondary);">
-                    Preview updates live as you type. Variables shown with first recipient's data.
-                </div>
-                <div class="preview-frame-wrap">
-                    <iframe id="previewFrame" class="gmail-preview"></iframe>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Docs Slide-Over -->
+    <!-- Docs -->
     <div class="docs-backdrop" id="docsBackdrop" onclick="closeDocs()"></div>
     <div class="docs-overlay" id="docsPanel">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="margin: 0;"><i class="ri-book-2-line"></i> Template Docs</h2>
-            <button class="glass-btn" onclick="closeDocs()" style="padding: 5px 10px;"><i class="ri-close-line"></i></button>
+            <h2 style="margin: 0; font-size: 1.2rem;"><i class="ri-book-2-line"></i> Template Docs</h2>
+            <button class="glass-btn glass-btn-sm" onclick="closeDocs()"><i class="ri-close-line"></i></button>
         </div>
-
         <h3>Template Variables</h3>
-        <p>Use double curly braces to insert personalized data from your CSV columns into each email.</p>
-        <pre>Hello <b>{{name}}</b>,
+        <p>Use double curly braces to insert data from your CSV:</p>
+        <pre>Hello {{name}},
 
-You've been selected for <b>{{event}}</b>!
+You've been selected for {{event}}!
 
 Best,
 Your Team</pre>
-
         <h3>Available Variables</h3>
-        <p>Variables are automatically created from your CSV column headers. For example, a CSV with headers:</p>
+        <p>Auto-created from CSV column headers. Example CSV:</p>
         <pre>name, email, school, year
 John, john@asu.edu, ASU, Junior</pre>
-        <p>Gives you these variables:</p>
+        <p>Gives you:</p>
         <ul>
             <li><code>{{name}}</code> &rarr; John</li>
             <li><code>{{email}}</code> &rarr; john@asu.edu</li>
             <li><code>{{school}}</code> &rarr; ASU</li>
             <li><code>{{year}}</code> &rarr; Junior</li>
         </ul>
-
         <h3>Email Column</h3>
-        <p>After uploading a CSV, select which column contains the recipient email addresses using the dropdown. This is the address each email will be sent to.</p>
-
-        <h3>Rich Text Editor</h3>
-        <p>Use the toolbar to format your email with bold, italic, headings, lists, colors, links, and images. The preview panel shows exactly how it will appear in Gmail.</p>
-
-        <h3>Advanced HTML</h3>
-        <p>Expand the "Advanced: Edit Raw HTML" section to directly edit the email's HTML source. Click "Apply HTML to Editor" to sync changes back to the visual editor.</p>
-
-        <h3>Preview</h3>
-        <p>The right panel shows a 1:1 Gmail preview. Toggle between Light and Dark mode to see how your email renders for both types of Gmail users.</p>
-
+        <p>Select which CSV column has the recipient email addresses. This is where each email gets sent.</p>
+        <h3>Rich Text vs Raw HTML</h3>
+        <p>Use the toolbar for visual formatting. Click <strong>"Advanced: Edit Raw HTML"</strong> below the editor to directly edit HTML source. Use "Pull from Editor" to grab current content, edit it, then "Push to Editor" to apply.</p>
         <h3>Tips</h3>
         <ul>
-            <li>Emails are sent one-by-one sequentially for deliverability.</li>
-            <li>Preview uses the first row of your CSV data for variable substitution.</li>
-            <li>Always test with a small list first.</li>
-            <li>Gmail may clip emails over 102KB.</li>
+            <li>Emails send one-by-one for deliverability</li>
+            <li>Preview uses first CSV row for variable fill</li>
+            <li>Test with a small list first</li>
+            <li>Gmail clips emails over 102KB</li>
         </ul>
     </div>
 
     <script src="{{ url_for('static', filename='bulk.js') }}"></script>
 </body>
-
 </html>

@@ -236,27 +236,33 @@ def api_emails(folder):
         if status != 'OK':
             mail.logout()
             return jsonify({'error': f'Folder {folder} not found'}), 404
-        status, messages = mail.search(None, "ALL")
-        all_ids = messages[0].split()
-        total_emails = len(all_ids)
-        
-        # Calculate slice
+
+        # Use UID search with SINCE filter for speed — only fetch recent emails
+        # instead of enumerating the entire 5-year mailbox
+        since_date = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime("%d-%b-%Y")
+        status, messages = mail.uid('search', None, f'(SINCE "{since_date}")')
+        all_uids = messages[0].split() if messages[0] else []
+
+        # If not enough emails in 90 days and user wants more, widen the search
+        if len(all_uids) < offset + limit:
+            status, messages = mail.uid('search', None, 'ALL')
+            all_uids = messages[0].split() if messages[0] else []
+
+        total_emails = len(all_uids)
+
+        # Calculate slice (newest first)
         start = max(0, total_emails - offset - limit)
         end = max(0, total_emails - offset)
-        batch_ids = all_ids[start:end]
-        
-        # Reverse to show newest first
-        batch_ids = batch_ids[::-1]
-        
-        for email_id in batch_ids:
-            uid = email_id.decode()
+        batch_uids = all_uids[start:end][::-1]
+
+        for uid_bytes in batch_uids:
+            uid = uid_bytes.decode()
             cache_key = f"{cache_key_base}:{uid}"
-            
+
             # Check cache
             cached_data = cache_redis.get(cache_key)
             if cached_data:
                 try:
-                    # Decrypt
                     data = json.loads(cached_data)
                     nonce = bytes.fromhex(data['n'])
                     ciphertext = bytes.fromhex(data['c'])
@@ -264,30 +270,28 @@ def api_emails(folder):
                     emails.append(json.loads(decrypted_json))
                     continue
                 except:
-                    pass # Cache invalid, fetch again
+                    pass
 
-            # Fetch proper
+            # Fetch by UID (stable across sessions, unlike sequence numbers)
             try:
-                res, msg_data = mail.fetch(uid.encode(), "(RFC822)")
+                res, msg_data = mail.uid('fetch', uid, '(RFC822)')
                 for response_part in msg_data:
                     if isinstance(response_part, tuple):
                         msg = email.message_from_bytes(response_part[1])
                         parsed = parse_email_content(msg)
                         parsed['id'] = uid
-                        
-                        # Cache it
+
                         json_str = json.dumps(parsed)
                         nonce, ciphertext = user_ctx.encrypt(json_str)
                         encrypted_payload = json.dumps({
                             'n': nonce.hex(),
                             'c': ciphertext.hex()
                         })
-                        # Cache for 7 days
                         cache_redis.setex(cache_key, 604800, encrypted_payload)
-                        
+
                         emails.append(parsed)
             except Exception as e:
-                print(f"Error fetching email {uid}: {e}")
+                print(f"Error fetching email UID {uid}: {e}")
 
         mail.logout()
         return jsonify(emails)
@@ -298,15 +302,14 @@ def api_emails(folder):
 
 @app.route('/api/email/<folder>/<id>')
 def api_email_detail(folder, id):
-    # This endpoint can serve the full cached content if available
-    # or fetch specifically if body was truncated (optimized above to fetch full)
     email_addr, password = get_stored_credentials()
     if not email_addr:
         return jsonify({'error': 'Unauthorized'}), 401
-    
+
     user_ctx = get_user_context(password)
     cache_key = f"email_cache:{email_addr}:{folder}:{id}"
-    
+
+    # Try cache first
     cached_data = cache_redis.get(cache_key)
     if cached_data:
         try:
@@ -315,10 +318,45 @@ def api_email_detail(folder, id):
             ciphertext = bytes.fromhex(data['c'])
             decrypted_json = user_ctx.decrypt(nonce, ciphertext)
             return jsonify(json.loads(decrypted_json))
-        except Exception as e:
-            return jsonify({'error': 'Cache decryption failed'}), 500
-            
-    return jsonify({'error': 'Email not found in cache'}), 404
+        except Exception:
+            pass
+
+    # Fallback: fetch directly from IMAP by UID
+    folder_map = {
+        'inbox': 'INBOX',
+        'sent': '[Gmail]/Sent Mail',
+        'drafts': '[Gmail]/Drafts',
+        'trash': '[Gmail]/Trash'
+    }
+    imap_folder = folder_map.get(folder.lower(), 'INBOX')
+
+    try:
+        mail = get_imap_connection(email_addr, password)
+        if not mail:
+            return jsonify({'error': 'Connection failed'}), 500
+
+        mail.select(f'"{imap_folder}"')
+        res, msg_data = mail.uid('fetch', id, '(RFC822)')
+        for response_part in msg_data:
+            if isinstance(response_part, tuple):
+                msg = email.message_from_bytes(response_part[1])
+                parsed = parse_email_content(msg)
+                parsed['id'] = id
+
+                # Cache it
+                json_str = json.dumps(parsed)
+                nonce, ciphertext = user_ctx.encrypt(json_str)
+                encrypted_payload = json.dumps({'n': nonce.hex(), 'c': ciphertext.hex()})
+                cache_redis.setex(cache_key, 604800, encrypted_payload)
+
+                mail.logout()
+                return jsonify(parsed)
+
+        mail.logout()
+    except Exception as e:
+        print(f"Detail fallback error: {e}")
+
+    return jsonify({'error': 'Email not found'}), 404
 
 @app.route('/send', methods=['POST'])
 def send_email():
