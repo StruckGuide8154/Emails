@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Mgr | Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard-header glass" style="border-radius: 0; border-left: 0; border-right: 0; border-top: 0;">
+        <div class="logo" style="font-size: 1.5rem;">
+            <i class="ri-mail-lock-line"></i> Email Mgr
+        </div>
+        <div class="user-info">
+            <span style="color: var(--text-secondary)">{{ email }}</span>
+            <div class="avatar">
+                {{ email[0].upper() }}
+            </div>
+            <a href="/logout" class="glass-btn" style="padding: 5px 15px; font-size: 0.8rem; margin-left: 10px;">
+                <i class="ri-logout-box-r-line"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-content">
+            <div class="glass sidebar">
+                <div class="menu-item active">
+                    <i class="ri-inbox-line"></i> Inbox
+                </div>
+                <!-- Future features -->
+                <div class="menu-item">
+                    <i class="ri-send-plane-line"></i> Sent
+                </div>
+                <div class="menu-item">
+                    <i class="ri-draft-line"></i> Drafts
+                </div>
+
+                <button class="glass-btn" id="composeBtn" style="margin-top: auto; width: 100%; text-align: center;">
+                    <i class="ri-edit-line"></i> Compose
+                </button>
+            </div>
+
+            <div class="glass email-view">
+                <div
+                    style="padding: 15px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0;">Inbox</h3>
+                    <button class="glass-btn" onclick="loadEmails()" style="padding: 5px 10px;">
+                        <i class="ri-refresh-line"></i>
+                    </button>
+                </div>
+                <div id="emailList" class="email-list">
+                    <!-- Emails will be loaded here -->
+                    <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
+                        Loading secure messages... <div class="loading"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compose Modal -->
+    <div class="modal-overlay" id="composeModal">
+        <div class="glass modal-content">
+            <i class="ri-close-line close-modal" id="closeModal"></i>
+            <h2>Compose Secure Email</h2>
+            <form id="composeForm" class="compose-form">
+                <input type="email" id="toEmail" class="glass-input" placeholder="To:" required>
+                <input type="text" id="subject" class="glass-input" placeholder="Subject:" required>
+                <textarea id="body" class="glass-input" placeholder="Message content..." required></textarea>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button type="submit" class="glass-btn">
+                        Send Encrypted <i class="ri-send-plane-fill"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

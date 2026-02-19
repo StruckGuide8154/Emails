@@ -10,6 +10,9 @@ import os
 import json
 import datetime
 from crypto_utils import security_manager
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Mgr | Secure Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body class="center-layout">
+    <div class="glass auth-card">
+        <div class="logo">
+            <i class="ri-shield-keyhole-line"></i> Email Mgr
+        </div>
+        <p style="color: var(--text-secondary);">Quantum-Safe Encryption Enabled</p>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div style="color: var(--error); margin-top: 10px; font-size: 0.9rem;">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="/auth" method="POST" class="auth-form">
+            <div class="input-group">
+                <input type="email" name="email" class="glass-input" placeholder="Gmail Address" required>
+            </div>
+            <div class="input-group">
+                <input type="password" name="password" class="glass-input" placeholder="Google App Password (16 chars)" required>
+            </div>
+            <button type="submit" class="glass-btn" style="width: 100%; margin-top: 10px;">
+                Secure Login <i class="ri-lock-line"></i>
+            </button>
+        </form>
+        <p style="margin-top: 20px; font-size: 0.8rem; color: var(--text-secondary); opacity: 0.7;">
+            Protected by EAS-256-GCM Encryption. 
+            <br>
+            Please enable 'App Passwords' in your Google Account settings.
+        </p>
+    </div>
+</body>
+</html>

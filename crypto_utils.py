@@ -1,6 +1,9 @@
 import os
 import secrets
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class SecurityManager:
     """
