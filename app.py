@@ -220,22 +220,22 @@ def api_emails(folder):
         'trash': '[Gmail]/Trash' 
     }
     imap_folder = folder_map.get(folder.lower(), 'INBOX')
-    
+
     user_ctx = get_user_context(password)
     cache_key_base = f"email_cache:{email_addr}:{folder}"
 
-    # Try to fetch from Redis first if offset > 0 (infinite scroll) or if we want speed
-    # We'll use a sorted set in Redis to store email IDs and a hash for content
-    # For simplicity in this demo, we'll just check if we have cached headers.
-    
     emails = []
-    
+
     try:
         mail = get_imap_connection(email_addr, password)
         if not mail:
              return jsonify({'error': 'Connection failed'}), 500
-             
-        mail.select(imap_folder)
+
+        # Quote folder name for IMAP (spaces/special chars in names like [Gmail]/Sent Mail)
+        status, _ = mail.select(f'"{imap_folder}"')
+        if status != 'OK':
+            mail.logout()
+            return jsonify({'error': f'Folder {folder} not found'}), 404
         status, messages = mail.search(None, "ALL")
         all_ids = messages[0].split()
         total_emails = len(all_ids)
@@ -361,6 +361,74 @@ def send_email():
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/bulk')
+def bulk_send_page():
+    email_addr, _ = get_stored_credentials()
+    if not email_addr:
+        return redirect(url_for('login'))
+    return render_template('bulk.html', email=email_addr)
+
+@app.route('/api/bulk-send', methods=['POST'])
+def bulk_send():
+    email_addr, password = get_stored_credentials()
+    if not email_addr:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'message': 'Invalid request'}), 400
+
+    subject_template = data.get('subject', '')
+    html_template = data.get('html_body', '')
+    recipients = data.get('recipients', [])
+
+    if not subject_template or not html_template or not recipients:
+        return jsonify({'success': False, 'message': 'Missing fields'}), 400
+
+    server = get_smtp_connection(email_addr, password)
+    if not server:
+        return jsonify({'success': False, 'message': 'SMTP Connection failed'}), 500
+
+    results = []
+    try:
+        for recipient in recipients:
+            to_email = recipient.get('email', '').strip()
+            if not to_email:
+                results.append({'email': to_email, 'status': 'skipped', 'message': 'No email'})
+                continue
+
+            # Replace template variables
+            subject = subject_template
+            body = html_template
+            for key, value in recipient.items():
+                placeholder = '{{' + key + '}}'
+                subject = subject.replace(placeholder, str(value))
+                body = body.replace(placeholder, str(value))
+
+            try:
+                msg = EmailMessage()
+                msg['Subject'] = subject
+                msg['From'] = email_addr
+                msg['To'] = to_email
+                msg.set_content(body, subtype='html')
+
+                server.send_message(msg)
+                results.append({'email': to_email, 'status': 'sent'})
+                del msg
+            except Exception as e:
+                results.append({'email': to_email, 'status': 'failed', 'message': str(e)})
+
+        server.quit()
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e), 'results': results}), 500
+
+    sent_count = sum(1 for r in results if r['status'] == 'sent')
+    return jsonify({
+        'success': True,
+        'message': f'{sent_count}/{len(recipients)} emails sent',
+        'results': results
+    })
 
 @app.route('/logout')
 def logout():

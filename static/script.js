@@ -72,7 +72,13 @@ async function loadEmails(isInitial) {
             return;
         }
 
-        const emails = await response.json();
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+            throw new Error(data.error || 'Failed to load emails');
+        }
+
+        const emails = Array.isArray(data) ? data : [];
 
         if (isInitial) list.innerHTML = '';
 
@@ -228,7 +234,7 @@ function escapeHtml(text) {
 
 function escapeHtmlAttribute(text) {
     if (!text) return '';
-    return text.replace(/"/g, '&quot;');
+    return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
 
 function formatDate(dateStr) {
