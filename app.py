@@ -14,6 +14,8 @@ import bleach
 import uuid
 import time
 import threading
+import random
+from datetime import datetime, timedelta, timezone
 from crypto_utils import security_manager, UserSecurityContext
 from dotenv import load_dotenv
 
@@ -423,12 +425,13 @@ def bulk_send():
     recipients = data.get('recipients', [])
     batch_size = int(data.get('batch_size', 0))
     time_delay = int(data.get('time_delay', 0))
+    is_optimum = data.get('optimum_mode', False)
 
     if not subject_template or not html_template or not recipients:
         return jsonify({'success': False, 'message': 'Missing fields'}), 400
 
     # If simple send (no batching/delay), do it synchronously and return results
-    if batch_size == 0 and time_delay == 0:
+    if not is_optimum and batch_size == 0 and time_delay == 0:
         results = send_email_batch(email_addr, password, recipients, subject_template, html_template)
         sent_count = sum(1 for r in results if r['status'] == 'sent')
         return jsonify({
@@ -436,8 +439,21 @@ def bulk_send():
             'message': f'{sent_count}/{len(recipients)} emails sent',
             'results': results
         })
+    elif is_optimum:
+        # User requested Optimum Drip Feed
+        thread = threading.Thread(target=process_optimum_drip_feed, args=(
+            email_addr, password, recipients, subject_template, html_template
+        ))
+        thread.daemon = True
+        thread.start()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Optimum Drip Feed started. This may take days depending on list size.',
+            'results': [] 
+        })
     else:
-        # Background send
+        # Background send (Manual Batch)
         thread = threading.Thread(target=process_background_batch, args=(
             email_addr, password, recipients, subject_template, html_template, batch_size, time_delay
         ))
@@ -449,6 +465,81 @@ def bulk_send():
             'message': 'Background sending started. Emails will be sent in batches.',
             'results': [] 
         })
+
+def get_arizona_time():
+    # Arizona is UTC-7 all year round (MST)
+    return datetime.now(timezone.utc) - timedelta(hours=7)
+
+def process_optimum_drip_feed(email_addr, password, recipients, subject_template, html_template):
+    # Limits
+    DAILY_LIMIT = 45 # Safely between 40-50
+    # Hourly is implicit by the 8-15 min delay (4-7 per hour)
+    
+    total = len(recipients)
+    sent_today = 0
+    current_day_str = get_arizona_time().strftime('%Y-%m-%d')
+    
+    i = 0
+    while i < total:
+        now_az = get_arizona_time()
+        
+        # 1. Check Weekend (0=Mon, 6=Sun)
+        if now_az.weekday() >= 5: # Saturday or Sunday
+            # Sleep until Monday 9:00 AM
+            # Calculate seconds until next Monday 9am
+            days_ahead = 7 - now_az.weekday() # If Sat(5) -> 2 days. If Sun(6) -> 1 day.
+            next_monday = (now_az + timedelta(days=days_ahead)).replace(hour=9, minute=0, second=0, microsecond=0)
+            sleep_seconds = (next_monday - now_az).total_seconds()
+            print(f"Weekend pause. Sleeping {sleep_seconds}s until Monday.")
+            time.sleep(max(60, sleep_seconds))
+            continue
+            
+        # 2. Check Daily Limit
+        today_str = now_az.strftime('%Y-%m-%d')
+        if today_str != current_day_str:
+            # New day, reset counter
+            current_day_str = today_str
+            sent_today = 0
+            
+        if sent_today >= DAILY_LIMIT:
+            # Sleep until tomorrow 9:00 AM
+            tomorrow = (now_az + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
+            sleep_seconds = (tomorrow - now_az).total_seconds()
+            print(f"Daily limit reached ({DAILY_LIMIT}). Sleeping {sleep_seconds}s until tomorrow.")
+            time.sleep(max(60, sleep_seconds))
+            continue
+            
+        # 3. Check Time Window (9 AM - 5 PM)
+        current_hour = now_az.hour
+        if current_hour < 9:
+            # Too early, sleep until 9 AM
+            start_time = now_az.replace(hour=9, minute=0, second=0, microsecond=0)
+            sleep_seconds = (start_time - now_az).total_seconds()
+            print(f"Too early. Sleeping {sleep_seconds}s until 9 AM.")
+            time.sleep(max(60, sleep_seconds))
+            continue
+        elif current_hour >= 17:
+             # Too late, sleep until tomorrow 9 AM
+            tomorrow = (now_az + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
+            sleep_seconds = (tomorrow - now_az).total_seconds()
+            print(f"Too late (After 5 PM). Sleeping {sleep_seconds}s until tomorrow.")
+            time.sleep(max(60, sleep_seconds))
+            continue
+            
+        # 4. Ready to Send
+        recipient = recipients[i]
+        # Send single email
+        send_email_batch(email_addr, password, [recipient], subject_template, html_template)
+        
+        i += 1
+        sent_today += 1
+        
+        # 5. Delay Confirmation (User Notice: 8-15 mins)
+        if i < total:
+            # Random delay 480s (8m) to 900s (15m)
+            delay = random.randint(480, 900)
+            print(f"Sent {i}/{total}. Sleeping {delay}s...")
+            time.sleep(delay)
 
 def process_background_batch(email_addr, password, recipients, subject_template, html_template, batch_size, time_delay):
     total = len(recipients)

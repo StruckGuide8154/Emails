@@ -564,9 +564,45 @@
                     </div>
 
 
-                    <!-- Batch Settings -->
-                    <div class="section-label">4. Batch Sending (Optional)</div>
-                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                    <!-- Sending Configuration -->
+                    <div class="section-label">4. Sending Configuration</div>
+
+                    <!-- Mode Switch -->
+                    <div
+                        style="margin-bottom: 12px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--glass-border);">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="optimumMode" onchange="toggleOptimumMode()"
+                                style="width: 18px; height: 18px; cursor: pointer;">
+                            <label for="optimumMode"
+                                style="cursor: pointer; font-weight: 500; font-size: 0.9rem;">Enable Optimum Drip Feed
+                                (Recommended)</label>
+                        </div>
+
+                        <!-- Optimum Notice -->
+                        <div id="optimumNotice"
+                            style="display: none; margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; padding: 10px; background: rgba(16, 185, 129, 0.1); border-left: 3px solid var(--success); border-radius: 4px;">
+                            <strong style="color: var(--success); display: block; margin-bottom: 6px;">OPTIMUM MODE
+                                ACTIVE:</strong>
+                            <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
+                                <li style="margin-bottom: 4px;"><strong>Batch Size:</strong> 1 email at a time.</li>
+                                <li style="margin-bottom: 4px;"><strong>Delay:</strong> Randomized 8-15 mins between
+                                    emails.</li>
+                                <li style="margin-bottom: 4px;"><strong>Schedule:</strong> Mon-Fri, 9:00 AM - 5:00 PM
+                                    (Arizona Time).</li>
+                                <li style="margin-bottom: 4px;"><strong>Limits:</strong> Max 4-7/hour, Max 40-50/day.
+                                </li>
+                            </ul>
+                            <div
+                                style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(16, 185, 129, 0.2); font-style: italic; color: var(--accent-color);">
+                                <i class="ri-information-line"></i> <strong>Requirement:</strong> You MUST include at
+                                least one variable in the Subject AND Body (e.g. {{name}}).
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Manual Settings (Hidden when Optimum is active) -->
+                    <div id="manualSettings"
+                        style="display: flex; gap: 12px; margin-bottom: 12px; transition: opacity 0.3s;">
                         <div style="flex: 1;">
                             <label
                                 style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Batch

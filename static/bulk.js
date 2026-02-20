@@ -374,16 +374,23 @@ async function startBulkSend() {
         alert('Upload a CSV file first.');
         return;
     }
-    if (!emailColumnKey) {
-        alert('Select the email column.');
-        return;
-    }
-
     const subject = document.getElementById('subjectInput').value;
     const htmlBody = document.getElementById('richEditor').innerHTML;
+    const isOptimum = document.getElementById('optimumMode').checked;
 
     if (!subject.trim()) { alert('Enter a subject.'); return; }
     if (!htmlBody.trim()) { alert('Write an email body.'); return; }
+
+    if (isOptimum) {
+        // Variable Check
+        const hasVarInSubject = /{{.+}}/.test(subject);
+        const hasVarInBody = /{{.+}}/.test(htmlBody);
+
+        if (!hasVarInSubject || !hasVarInBody) {
+            alert('Optimum Mode Requirement:\nYou must include at least one variable (e.g. {{name}}) in BOTH the Subject Line and Email Body.');
+            return;
+        }
+    }
 
     // Build recipient list with all fields
     const recipients = csvRows.map(row => {
@@ -413,7 +420,8 @@ async function startBulkSend() {
                 html_body: htmlBody,
                 recipients: recipients,
                 batch_size: parseInt(document.getElementById('batchSize').value) || 0,
-                time_delay: parseInt(document.getElementById('batchDelay').value) || 0
+                time_delay: parseInt(document.getElementById('batchDelay').value) || 0,
+                optimum_mode: document.getElementById('optimumMode').checked
             })
         });
 
@@ -452,6 +460,25 @@ async function startBulkSend() {
         btn.innerHTML = '<i class="ri-send-plane-fill"></i> Send to All Recipients';
         btn.style.borderColor = '';
     }, 4000);
+}
+
+function toggleOptimumMode() {
+    const isOptimum = document.getElementById('optimumMode').checked;
+    const manualSettings = document.getElementById('manualSettings');
+    const notice = document.getElementById('optimumNotice');
+
+    if (isOptimum) {
+        manualSettings.style.opacity = '0.3';
+        manualSettings.style.pointerEvents = 'none';
+        notice.style.display = 'block';
+        // Reset manual values to avoid confusion, though backend ignores them
+        document.getElementById('batchSize').value = 0;
+        document.getElementById('batchDelay').value = 0;
+    } else {
+        manualSettings.style.opacity = '1';
+        manualSettings.style.pointerEvents = 'auto';
+        notice.style.display = 'none';
+    }
 }
 
 // ───── Docs ─────
