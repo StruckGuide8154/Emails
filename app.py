@@ -13,6 +13,7 @@ import datetime
 import bleach
 import uuid
 import time
+import threading
 from crypto_utils import security_manager, UserSecurityContext
 from dotenv import load_dotenv
 
@@ -420,17 +421,65 @@ def bulk_send():
     subject_template = data.get('subject', '')
     html_template = data.get('html_body', '')
     recipients = data.get('recipients', [])
+    batch_size = int(data.get('batch_size', 0))
+    time_delay = int(data.get('time_delay', 0))
 
     if not subject_template or not html_template or not recipients:
         return jsonify({'success': False, 'message': 'Missing fields'}), 400
 
-    server = get_smtp_connection(email_addr, password)
-    if not server:
-        return jsonify({'success': False, 'message': 'SMTP Connection failed'}), 500
+    # If simple send (no batching/delay), do it synchronously and return results
+    if batch_size == 0 and time_delay == 0:
+        results = send_email_batch(email_addr, password, recipients, subject_template, html_template)
+        sent_count = sum(1 for r in results if r['status'] == 'sent')
+        return jsonify({
+            'success': True,
+            'message': f'{sent_count}/{len(recipients)} emails sent',
+            'results': results
+        })
+    else:
+        # Background send
+        thread = threading.Thread(target=process_background_batch, args=(
+            email_addr, password, recipients, subject_template, html_template, batch_size, time_delay
+        ))
+        thread.daemon = True
+        thread.start()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Background sending started. Emails will be sent in batches.',
+            'results': [] 
+        })
 
+def process_background_batch(email_addr, password, recipients, subject_template, html_template, batch_size, time_delay):
+    total = len(recipients)
+    # If batch_size is 0 (all at once) but delay is set, treat as one big batch (or invalid combination? 
+    # User said "0 being all at once". If delay is set but batch is 0, it just sends all at once instantly. 
+    # The delay only applies BETWEEN batches. So effectively immediate.)
+    if batch_size <= 0:
+        batch_size = total
+        
+    for i in range(0, total, batch_size):
+        batch = recipients[i : i + batch_size]
+        
+        # Connect fresh for each batch
+        # We process the batch synchronously
+        send_email_batch(email_addr, password, batch, subject_template, html_template)
+        
+        # Wait if there are more batches
+        if i + batch_size < total:
+            time.sleep(time_delay * 60)
+
+def send_email_batch(email_addr, password, recipient_list, subject_template, html_template):
+    server = get_smtp_connection(email_addr, password)
     results = []
+    if not server:
+        # If connection fails, mark all in this batch as failed
+        for r in recipient_list:
+            results.append({'email': r.get('email'), 'status': 'failed', 'message': 'SMTP Connection failed'})
+        return results
+
     try:
-        for recipient in recipients:
+        for recipient in recipient_list:
             to_email = recipient.get('email', '').strip()
             if not to_email:
                 results.append({'email': to_email, 'status': 'skipped', 'message': 'No email'})
@@ -459,14 +508,10 @@ def bulk_send():
 
         server.quit()
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e), 'results': results}), 500
-
-    sent_count = sum(1 for r in results if r['status'] == 'sent')
-    return jsonify({
-        'success': True,
-        'message': f'{sent_count}/{len(recipients)} emails sent',
-        'results': results
-    })
+        # If server loop crashes
+        pass
+        
+    return results
 
 @app.route('/logout')
 def logout():

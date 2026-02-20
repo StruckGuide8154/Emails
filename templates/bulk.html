@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,10 +43,13 @@
             transition: all 0.2s;
             flex-shrink: 0;
         }
-        .csv-upload-zone:hover, .csv-upload-zone.dragover {
+
+        .csv-upload-zone:hover,
+        .csv-upload-zone.dragover {
             border-color: var(--primary-color);
             background: rgba(99, 102, 241, 0.08);
         }
+
         .csv-upload-zone.loaded {
             border-color: var(--success);
             border-style: solid;
@@ -58,7 +62,9 @@
             gap: 10px;
             padding: 6px 0;
         }
-        .mapping-row select, .toolbar-select {
+
+        .mapping-row select,
+        .toolbar-select {
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--glass-border);
             color: white;
@@ -67,8 +73,17 @@
             font-family: inherit;
             font-size: 0.8rem;
         }
-        .mapping-row select option, .toolbar-select option { background: #1a1a2e; }
-        .mapping-label { min-width: 80px; color: var(--text-secondary); font-size: 0.85rem; }
+
+        .mapping-row select option,
+        .toolbar-select option {
+            background: #1a1a2e;
+        }
+
+        .mapping-label {
+            min-width: 80px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
 
         /* Toolbar */
         .editor-toolbar {
@@ -81,6 +96,7 @@
             border: 1px solid var(--glass-border);
             border-bottom: none;
         }
+
         .toolbar-btn {
             background: none;
             border: 1px solid transparent;
@@ -91,12 +107,26 @@
             font-size: 0.85rem;
             transition: all 0.15s;
         }
-        .toolbar-btn:hover { background: rgba(255,255,255,0.08); color: white; }
-        .toolbar-sep { width: 1px; background: var(--glass-border); margin: 2px 3px; }
+
+        .toolbar-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+        }
+
+        .toolbar-sep {
+            width: 1px;
+            background: var(--glass-border);
+            margin: 2px 3px;
+        }
+
         .toolbar-color {
-            width: 26px; height: 26px;
+            width: 26px;
+            height: 26px;
             border: 1px solid var(--glass-border);
-            border-radius: 4px; padding: 0; cursor: pointer; background: none;
+            border-radius: 4px;
+            padding: 0;
+            cursor: pointer;
+            background: none;
         }
 
         /* Rich editor */
@@ -113,10 +143,14 @@
             outline: none;
             font-size: 0.9rem;
         }
-        .rich-editor:focus { border-color: var(--primary-color); }
+
+        .rich-editor:focus {
+            border-color: var(--primary-color);
+        }
+
         .rich-editor:empty::before {
             content: 'Write your email here... Use {{variable}} for personalization';
-            color: rgba(255,255,255,0.25);
+            color: rgba(255, 255, 255, 0.25);
         }
 
         /* Advanced HTML — clearly visible toggle */
@@ -126,6 +160,7 @@
             overflow: hidden;
             flex-shrink: 0;
         }
+
         .advanced-toggle {
             display: flex;
             align-items: center;
@@ -140,14 +175,28 @@
             transition: all 0.2s;
             user-select: none;
         }
+
         .advanced-toggle:hover {
             background: rgba(99, 102, 241, 0.15);
             color: white;
         }
-        .advanced-toggle .toggle-icon { transition: transform 0.3s; }
-        .advanced-toggle.open .toggle-icon { transform: rotate(180deg); }
-        .advanced-body { display: none; }
-        .advanced-body.open { display: block; }
+
+        .advanced-toggle .toggle-icon {
+            transition: transform 0.3s;
+        }
+
+        .advanced-toggle.open .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .advanced-body {
+            display: none;
+        }
+
+        .advanced-body.open {
+            display: block;
+        }
+
         .html-editor {
             width: 100%;
             min-height: 180px;
@@ -169,98 +218,220 @@
             border-bottom: 1px solid var(--glass-border);
             flex-shrink: 0;
         }
+
         .preview-tab {
-            flex: 1; padding: 10px; text-align: center;
-            cursor: pointer; font-size: 0.85rem;
-            color: var(--text-secondary); background: none;
-            border: none; font-family: inherit; transition: all 0.15s;
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            background: none;
+            border: none;
+            font-family: inherit;
+            transition: all 0.15s;
         }
+
         .preview-tab.active {
             color: white;
             border-bottom: 2px solid var(--primary-color);
             background: rgba(99, 102, 241, 0.08);
         }
-        .preview-frame-wrap { flex: 1; overflow-y: auto; min-height: 0; }
-        .gmail-preview { width: 100%; height: 100%; min-height: 100%; border: none; }
+
+        .preview-frame-wrap {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .gmail-preview {
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            border: none;
+        }
 
         /* Variable chips */
-        .var-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-        .var-chip {
-            background: rgba(99,102,241,0.15);
-            border: 1px solid rgba(99,102,241,0.3);
-            padding: 3px 10px; border-radius: 12px;
-            font-size: 0.75rem; cursor: pointer;
-            color: var(--accent-color); transition: all 0.15s;
+        .var-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
         }
-        .var-chip:hover { background: rgba(99,102,241,0.3); color: white; }
+
+        .var-chip {
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            color: var(--accent-color);
+            transition: all 0.15s;
+        }
+
+        .var-chip:hover {
+            background: rgba(99, 102, 241, 0.3);
+            color: white;
+        }
 
         /* Progress */
-        .send-progress { display: none; margin-top: 8px; }
-        .progress-bar { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
-        .progress-fill {
-            height: 100%; width: 0%;
-            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
-            border-radius: 3px; transition: width 0.3s;
+        .send-progress {
+            display: none;
+            margin-top: 8px;
         }
-        .progress-text { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
+
+        .progress-bar {
+            height: 5px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
 
         .send-log {
-            max-height: 140px; overflow-y: auto;
-            font-size: 0.8rem; padding: 10px;
-            background: rgba(0,0,0,0.2); border-radius: var(--radius-sm);
-            display: none; margin-top: 8px;
+            max-height: 140px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: var(--radius-sm);
+            display: none;
+            margin-top: 8px;
         }
-        .log-entry { padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-        .log-sent { color: var(--success); }
-        .log-failed { color: var(--error); }
-        .log-skipped { color: var(--text-secondary); }
+
+        .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .log-sent {
+            color: var(--success);
+        }
+
+        .log-failed {
+            color: var(--error);
+        }
+
+        .log-skipped {
+            color: var(--text-secondary);
+        }
 
         /* Docs slide-over */
         .docs-overlay {
-            position: fixed; top: 0; right: -420px; width: 420px;
-            height: 100vh; background: rgba(15,15,19,0.97);
+            position: fixed;
+            top: 0;
+            right: -420px;
+            width: 420px;
+            height: 100vh;
+            background: rgba(15, 15, 19, 0.97);
             backdrop-filter: blur(20px);
             border-left: 1px solid var(--glass-border);
-            z-index: 1001; transition: right 0.3s;
-            overflow-y: auto; padding: 28px; box-sizing: border-box;
+            z-index: 1001;
+            transition: right 0.3s;
+            overflow-y: auto;
+            padding: 28px;
+            box-sizing: border-box;
         }
-        .docs-overlay.open { right: 0; }
-        .docs-overlay h3 { margin-top: 20px; color: var(--accent-color); font-size: 1rem; }
-        .docs-overlay p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; margin: 8px 0; }
+
+        .docs-overlay.open {
+            right: 0;
+        }
+
+        .docs-overlay h3 {
+            margin-top: 20px;
+            color: var(--accent-color);
+            font-size: 1rem;
+        }
+
+        .docs-overlay p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin: 8px 0;
+        }
+
         .docs-overlay code {
-            background: rgba(99,102,241,0.15); padding: 2px 7px;
-            border-radius: 4px; font-size: 0.83rem;
+            background: rgba(99, 102, 241, 0.15);
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 0.83rem;
         }
+
         .docs-overlay pre {
-            background: rgba(0,0,0,0.35); padding: 14px;
-            border-radius: var(--radius-sm); overflow-x: auto;
-            font-size: 0.8rem; line-height: 1.5; color: #a5f3a3;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            overflow-x: auto;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: #a5f3a3;
         }
-        .docs-overlay ul { padding-left: 18px; font-size: 0.85rem; color: var(--text-secondary); }
-        .docs-overlay li { margin: 4px 0; }
+
+        .docs-overlay ul {
+            padding-left: 18px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .docs-overlay li {
+            margin: 4px 0;
+        }
+
         .docs-backdrop {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
-            z-index: 1000; display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            display: none;
         }
-        .docs-backdrop.open { display: block; }
+
+        .docs-backdrop.open {
+            display: block;
+        }
 
         /* Section labels */
         .section-label {
-            font-size: 0.7rem; text-transform: uppercase;
-            letter-spacing: 1px; color: var(--text-secondary);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
         }
+
         .csv-info {
-            font-size: 0.85rem; color: var(--text-secondary);
-            display: flex; align-items: center; gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
+
         .recipient-badge {
-            display: inline-flex; align-items: center; gap: 4px;
-            background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.25);
-            padding: 3px 10px; border-radius: 20px;
-            font-size: 0.8rem; color: var(--success);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--success);
         }
     </style>
 </head>
+
 <body>
     <div class="dash-shell">
         <header class="dash-header glass">
@@ -295,9 +466,11 @@
                             <div class="csv-info">
                                 <i class="ri-file-text-line"></i>
                                 <span id="csvFileName"></span> &mdash;
-                                <span class="recipient-badge"><i class="ri-user-line"></i> <span id="recipientCount">0</span></span>
+                                <span class="recipient-badge"><i class="ri-user-line"></i> <span
+                                        id="recipientCount">0</span></span>
                             </div>
-                            <button class="glass-btn glass-btn-sm" onclick="clearCsv()"><i class="ri-close-line"></i> Clear</button>
+                            <button class="glass-btn glass-btn-sm" onclick="clearCsv()"><i class="ri-close-line"></i>
+                                Clear</button>
                         </div>
                         <div class="section-label" style="margin-top: 12px;">Map Email Column</div>
                         <div class="mapping-row">
@@ -310,13 +483,15 @@
 
                     <!-- Subject -->
                     <div class="section-label">2. Subject Line</div>
-                    <input type="text" id="subjectInput" class="glass-input" placeholder="Subject: e.g. Hey {{name}}, you're invited!">
+                    <input type="text" id="subjectInput" class="glass-input"
+                        placeholder="Subject: e.g. Hey {{name}}, you're invited!">
 
                     <!-- Rich Text Editor -->
                     <div class="section-label">3. Email Body</div>
                     <div>
                         <div class="editor-toolbar">
-                            <select class="toolbar-select" onchange="execFormat('formatBlock', this.value); this.selectedIndex=0;">
+                            <select class="toolbar-select"
+                                onchange="execFormat('formatBlock', this.value); this.selectedIndex=0;">
                                 <option value="" disabled selected>Format</option>
                                 <option value="h1">Heading 1</option>
                                 <option value="h2">Heading 2</option>
@@ -331,24 +506,38 @@
                                 <option value="7">Huge</option>
                             </select>
                             <div class="toolbar-sep"></div>
-                            <button type="button" class="toolbar-btn" onclick="execCmd('bold')" title="Bold"><i class="ri-bold"></i></button>
-                            <button type="button" class="toolbar-btn" onclick="execCmd('italic')" title="Italic"><i class="ri-italic"></i></button>
-                            <button type="button" class="toolbar-btn" onclick="execCmd('underline')" title="Underline"><i class="ri-underline"></i></button>
-                            <button type="button" class="toolbar-btn" onclick="execCmd('strikeThrough')" title="Strikethrough"><i class="ri-strikethrough"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('bold')" title="Bold"><i
+                                    class="ri-bold"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('italic')" title="Italic"><i
+                                    class="ri-italic"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('underline')"
+                                title="Underline"><i class="ri-underline"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('strikeThrough')"
+                                title="Strikethrough"><i class="ri-strikethrough"></i></button>
                             <div class="toolbar-sep"></div>
-                            <input type="color" class="toolbar-color" value="#ffffff" onchange="execFormat('foreColor', this.value)" title="Text Color">
-                            <input type="color" class="toolbar-color" value="#000000" onchange="execFormat('hiliteColor', this.value)" title="Highlight">
+                            <input type="color" class="toolbar-color" value="#ffffff"
+                                onchange="execFormat('foreColor', this.value)" title="Text Color">
+                            <input type="color" class="toolbar-color" value="#000000"
+                                onchange="execFormat('hiliteColor', this.value)" title="Highlight">
                             <div class="toolbar-sep"></div>
-                            <button type="button" class="toolbar-btn" onclick="execCmd('justifyLeft')" title="Align Left"><i class="ri-align-left"></i></button>
-                            <button type="button" class="toolbar-btn" onclick="execCmd('justifyCenter')" title="Center"><i class="ri-align-center"></i></button>
-                            <button type="button" class="toolbar-btn" onclick="execCmd('justifyRight')" title="Align Right"><i class="ri-align-right"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('justifyLeft')"
+                                title="Align Left"><i class="ri-align-left"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('justifyCenter')"
+                                title="Center"><i class="ri-align-center"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('justifyRight')"
+                                title="Align Right"><i class="ri-align-right"></i></button>
                             <div class="toolbar-sep"></div>
-                            <button type="button" class="toolbar-btn" onclick="execCmd('insertUnorderedList')" title="Bullet List"><i class="ri-list-unordered"></i></button>
-                            <button type="button" class="toolbar-btn" onclick="execCmd('insertOrderedList')" title="Numbered List"><i class="ri-list-ordered"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('insertUnorderedList')"
+                                title="Bullet List"><i class="ri-list-unordered"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('insertOrderedList')"
+                                title="Numbered List"><i class="ri-list-ordered"></i></button>
                             <div class="toolbar-sep"></div>
-                            <button type="button" class="toolbar-btn" onclick="insertLink()" title="Insert Link"><i class="ri-link"></i></button>
-                            <button type="button" class="toolbar-btn" onclick="insertImage()" title="Image"><i class="ri-image-line"></i></button>
-                            <button type="button" class="toolbar-btn" onclick="execCmd('removeFormat')" title="Clear Format"><i class="ri-format-clear"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="insertLink()" title="Insert Link"><i
+                                    class="ri-link"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="insertImage()" title="Image"><i
+                                    class="ri-image-line"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="execCmd('removeFormat')"
+                                title="Clear Format"><i class="ri-format-clear"></i></button>
                         </div>
                         <div class="rich-editor" id="richEditor" contenteditable="true"></div>
                     </div>
@@ -360,8 +549,10 @@
                             <i class="ri-arrow-down-s-line toggle-icon"></i>
                         </div>
                         <div class="advanced-body" id="advancedBody">
-                            <textarea class="html-editor" id="htmlEditor" spellcheck="false" placeholder="Paste or write raw HTML here..."></textarea>
-                            <div style="padding: 8px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--glass-border);">
+                            <textarea class="html-editor" id="htmlEditor" spellcheck="false"
+                                placeholder="Paste or write raw HTML here..."></textarea>
+                            <div
+                                style="padding: 8px; display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--glass-border);">
                                 <button class="glass-btn glass-btn-sm" onclick="pullHtmlFromEditor()">
                                     <i class="ri-download-line"></i> Pull from Editor
                                 </button>
@@ -372,15 +563,38 @@
                         </div>
                     </div>
 
+
+                    <!-- Batch Settings -->
+                    <div class="section-label">4. Batch Sending (Optional)</div>
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                        <div style="flex: 1;">
+                            <label
+                                style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Batch
+                                Size (0 = All at once)</label>
+                            <input type="number" id="batchSize" class="glass-input" value="0" min="0"
+                                style="width: 100%;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label
+                                style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Minutes
+                                Delay (between batches)</label>
+                            <input type="number" id="batchDelay" class="glass-input" value="0" min="0"
+                                style="width: 100%;">
+                        </div>
+                    </div>
+
                     <!-- Send -->
                     <div style="display: flex; gap: 10px; align-items: center; flex-shrink: 0;">
-                        <button class="glass-btn" id="sendBulkBtn" onclick="startBulkSend()" style="padding: 10px 28px; font-size: 0.95rem;">
+                        <button class="glass-btn" id="sendBulkBtn" onclick="startBulkSend()"
+                            style="padding: 10px 28px; font-size: 0.95rem;">
                             <i class="ri-send-plane-fill"></i> Send to All Recipients
                         </button>
                     </div>
 
                     <div class="send-progress" id="sendProgress">
-                        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
                         <div class="progress-text" id="progressText">Sending 0/0...</div>
                     </div>
                     <div class="send-log" id="sendLog"></div>
@@ -396,7 +610,8 @@
                             <i class="ri-moon-line"></i> Gmail Dark
                         </button>
                     </div>
-                    <div style="padding: 10px 14px; border-bottom: 1px solid var(--glass-border); font-size: 0.8rem; color: var(--text-secondary); flex-shrink: 0;">
+                    <div
+                        style="padding: 10px 14px; border-bottom: 1px solid var(--glass-border); font-size: 0.8rem; color: var(--text-secondary); flex-shrink: 0;">
                         Live preview — shows first recipient's data
                     </div>
                     <div class="preview-frame-wrap">
@@ -436,7 +651,9 @@ John, john@asu.edu, ASU, Junior</pre>
         <h3>Email Column</h3>
         <p>Select which CSV column has the recipient email addresses. This is where each email gets sent.</p>
         <h3>Rich Text vs Raw HTML</h3>
-        <p>Use the toolbar for visual formatting. Click <strong>"Advanced: Edit Raw HTML"</strong> below the editor to directly edit HTML source. Use "Pull from Editor" to grab current content, edit it, then "Push to Editor" to apply.</p>
+        <p>Use the toolbar for visual formatting. Click <strong>"Advanced: Edit Raw HTML"</strong> below the editor to
+            directly edit HTML source. Use "Pull from Editor" to grab current content, edit it, then "Push to Editor" to
+            apply.</p>
         <h3>Tips</h3>
         <ul>
             <li>Emails send one-by-one for deliverability</li>
@@ -448,4 +665,5 @@ John, john@asu.edu, ASU, Junior</pre>
 
     <script src="{{ url_for('static', filename='bulk.js') }}"></script>
 </body>
+
 </html>

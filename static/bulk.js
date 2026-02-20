@@ -411,7 +411,9 @@ async function startBulkSend() {
             body: JSON.stringify({
                 subject: subject,
                 html_body: htmlBody,
-                recipients: recipients
+                recipients: recipients,
+                batch_size: parseInt(document.getElementById('batchSize').value) || 0,
+                time_delay: parseInt(document.getElementById('batchDelay').value) || 0
             })
         });
 
