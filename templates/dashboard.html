@@ -35,6 +35,8 @@
 
                 <div class="sidebar-actions">
                     <a href="/bulk" class="glass-btn"><i class="ri-mail-send-line"></i> New Bulk Send</a>
+                    <button class="glass-btn" id="composeBtn"><i class="ri-edit-line"></i> Compose</button>
+                    <a href="/history" class="glass-btn"><i class="ri-history-line"></i> History</a>
                 </div>
 
                 <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border);">
@@ -45,27 +47,28 @@
                         <!-- Jobs injected here -->
                     </div>
                 </div>
+            </aside>
 
-                <!-- Email List -->
-                <section class="glass list-panel">
-                    <div class="list-header">
-                        <h3 id="folderTitle">Inbox</h3>
-                        <button class="glass-btn glass-btn-sm" onclick="refreshEmails()"><i
-                                class="ri-refresh-line"></i></button>
-                    </div>
-                    <div id="emailList" class="list-scroll"></div>
-                    <div id="loadMoreTrigger" class="list-footer">Load more</div>
-                </section>
+            <!-- Email List -->
+            <section class="glass list-panel">
+                <div class="list-header">
+                    <h3 id="folderTitle">Inbox</h3>
+                    <button class="glass-btn glass-btn-sm" onclick="refreshEmails()"><i
+                            class="ri-refresh-line"></i></button>
+                </div>
+                <div id="emailList" class="list-scroll"></div>
+                <div id="loadMoreTrigger" class="list-footer">Load more</div>
+            </section>
 
-                <!-- Email Detail -->
-                <section class="glass detail-panel" id="emailDetailView">
-                    <div class="detail-panel-inner">
-                        <div class="detail-placeholder">
-                            <i class="ri-mail-open-line"></i>
-                            <p>Select an email to read</p>
-                        </div>
+            <!-- Email Detail -->
+            <section class="glass detail-panel" id="emailDetailView">
+                <div class="detail-panel-inner">
+                    <div class="detail-placeholder">
+                        <i class="ri-mail-open-line"></i>
+                        <p>Select an email to read</p>
                     </div>
-                </section>
+                </div>
+            </section>
         </main>
     </div>
 
