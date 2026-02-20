@@ -934,7 +934,11 @@ def process_background_batch(job_id, email_addr, password, subject_template, htm
         
         # Wait if there are more batches
         if i < total:
-            job_manager.jobs[job_id]['estimated_completion'] = f"Wait {time_delay}m..."
+            with job_manager.lock:
+                _job = job_manager._load_job(job_id)
+                if _job:
+                    _job['estimated_completion'] = f"Wait {time_delay}m..."
+                    job_manager._save_job(_job)
             # Sleep in chunks to allow iterrupt
             sleep_chunks = int(time_delay * 60 / 2)
             for _ in range(sleep_chunks):
