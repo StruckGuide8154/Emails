@@ -28,63 +28,79 @@ app = Flask(__name__)
 # --- JOB MANAGER ---
 class JobManager:
     def __init__(self):
-        self.jobs = {} # { job_id: { type, total, sent, failed, status, start_time, estimated_completion, details } }
+        # We use the same Redis URL as the session
+        self.redis = redis.from_url(os.environ.get('REDIS_URL', 'redis://localhost:6379'))
         self.lock = threading.Lock()
+
+    def _save_job(self, job):
+        self.redis.set(f"job:{job['id']}", json.dumps(job))
+
+    def _load_job(self, job_id):
+        data = self.redis.get(f"job:{job_id}")
+        return json.loads(data) if data else None
 
     def create_job(self, job_type, recipients, details=None):
         job_id = str(uuid.uuid4())
-        # Initialize recipients with default status
+        # Initialize recipients
         for r in recipients:
             r['send_status'] = 'queued'
             r['send_time'] = None
             
+        job = {
+            'id': job_id,
+            'type': job_type,
+            'recipients': recipients,
+            'total': len(recipients),
+            'sent': 0,
+            'failed': 0,
+            'status': 'running',
+            'start_time': datetime.now().isoformat(),
+            'last_update': datetime.now().isoformat(),
+            'last_email_sent': None,
+            'estimated_completion': 'Calculating...',
+            'details': details or {}
+        }
         with self.lock:
-            self.jobs[job_id] = {
-                'id': job_id,
-                'type': job_type,
-                'recipients': recipients, # Store full list for export
-                'total': len(recipients),
-                'sent': 0,
-                'failed': 0,
-                'status': 'running',
-                'start_time': datetime.now().isoformat(),
-                'last_update': datetime.now().isoformat(),
-                'last_email_sent': None, # {email, time}
-                'estimated_completion': 'Calculating...',
-                'details': details or {}
-            }
+            self._save_job(job)
         return job_id
 
     def set_status(self, job_id, status):
         with self.lock:
-            if job_id in self.jobs:
-                self.jobs[job_id]['status'] = status
-                self.jobs[job_id]['last_update'] = datetime.now().isoformat()
+            job = self._load_job(job_id)
+            if job:
+                job['status'] = status
+                job['last_update'] = datetime.now().isoformat()
+                self._save_job(job)
 
     def get_status(self, job_id):
-        with self.lock:
-            return self.jobs.get(job_id, {}).get('status')
+        # No lock needed for simple read usually, but good practice
+        job = self._load_job(job_id)
+        return job.get('status') if job else None
+
+    def get_job(self, job_id):
+        return self._load_job(job_id)
 
     def mark_recipient(self, job_id, index, status, error=None):
         with self.lock:
-            if job_id in self.jobs and index < len(self.jobs[job_id]['recipients']):
-                rec = self.jobs[job_id]['recipients'][index]
+            job = self._load_job(job_id)
+            if job and index < len(job['recipients']):
+                rec = job['recipients'][index]
                 rec['send_status'] = status
                 rec['send_time'] = datetime.now().isoformat()
                 if error:
                     rec['error'] = error
                 
-                # Update last sent info for UI
                 if status == 'sent':
-                    self.jobs[job_id]['last_email_sent'] = {
+                    job['last_email_sent'] = {
                         'email': rec.get('email'),
                         'time': datetime.now().strftime('%I:%M %p')
                     }
+                self._save_job(job)
 
     def update_progress(self, job_id, sent_inc=0, failed_inc=0, status=None):
         with self.lock:
-            if job_id in self.jobs:
-                job = self.jobs[job_id]
+            job = self._load_job(job_id)
+            if job:
                 job['sent'] += sent_inc
                 job['failed'] += failed_inc
                 job['last_update'] = datetime.now().isoformat()
@@ -92,52 +108,57 @@ class JobManager:
                 if status:
                     job['status'] = status
                 
-                # Simple completion estimate
+                # Estimate
                 if job['status'] == 'running' and job['sent'] > 0:
-                    elapsed = (datetime.now() - datetime.fromisoformat(job['start_time'])).total_seconds()
-                    avg_time_per_email = elapsed / job['sent']
-                    remaining = job['total'] - (job['sent'] + job['failed'])
-                    if remaining > 0:
-                        est_seconds = remaining * avg_time_per_email
-                        # Format readable string
-                        if est_seconds > 86400:
-                            job['estimated_completion'] = f"{int(est_seconds/86400)} days"
-                        elif est_seconds > 3600:
-                            job['estimated_completion'] = f"{int(est_seconds/3600)} hours"
-                        elif est_seconds > 60:
-                             job['estimated_completion'] = f"{int(est_seconds/60)} mins"
-                        else:
-                            job['estimated_completion'] = f"{int(est_seconds)} secs"
+                    try:
+                        start = datetime.fromisoformat(job['start_time'])
+                        elapsed = (datetime.now() - start).total_seconds()
+                        avg = elapsed / job['sent']
+                        remaining = job['total'] - (job['sent'] + job['failed'])
+                        if remaining > 0:
+                            est_sec = remaining * avg
+                            if est_sec > 86400: job['estimated_completion'] = f"{int(est_sec/86400)} days"
+                            elif est_sec > 3600: job['estimated_completion'] = f"{int(est_sec/3600)} hours"
+                            elif est_sec > 60: job['estimated_completion'] = f"{int(est_sec/60)} mins"
+                            else: job['estimated_completion'] = f"{int(est_sec)} secs"
+                    except:
+                        pass
+                
+                self._save_job(job)
 
     def get_user_jobs(self, email):
         user_jobs = []
-        with self.lock:
-            for jid, job in self.jobs.items():
-                if job['details'].get('user') == email:
-                    # Calculate %
-                    processed = job['sent'] + job['failed']
-                    pct = int((processed / job['total']) * 100) if job['total'] > 0 else 0
-                    
-                    # Clone simple data to return (exclude heavy recipients list)
-                    j_copy = {k: v for k, v in job.items() if k != 'recipients'}
-                    j_copy['percent'] = pct
-                    user_jobs.append(j_copy)
+        # Scan for jobs (in prod use a set per user)
+        # For this scale, keys scan is okay
+        keys = self.redis.keys("job:*")
+        
+        for k in keys:
+            try:
+                data = self.redis.get(k)
+                if data:
+                    job = json.loads(data)
+                    if job['details'].get('user') == email:
+                         # Calculate %
+                        processed = job['sent'] + job['failed']
+                        pct = int((processed / job['total']) * 100) if job['total'] > 0 else 0
+                        
+                        j_copy = {k: v for k, v in job.items() if k != 'recipients'}
+                        j_copy['percent'] = pct
+                        user_jobs.append(j_copy)
+            except:
+                continue
+                
         return user_jobs
         
     def generate_csv(self, job_id, filter_type):
-        with self.lock:
-            if job_id not in self.jobs:
-                return None
-            job = self.jobs[job_id]
-            recipients = job['recipients']
-            
+        job = self._load_job(job_id)
+        if not job: return None
+        
+        recipients = job['recipients']
         output = io.StringIO()
-        if not recipients:
-            return ""
+        if not recipients: return ""
             
-        # Determine headers from first recipient keys + status fields
         keys = list(recipients[0].keys())
-        # Ensure status fields are at end if not present
         if 'send_status' not in keys: keys.append('send_status')
         if 'send_time' not in keys: keys.append('send_time')
         if 'error' not in keys: keys.append('error')
@@ -146,13 +167,7 @@ class JobManager:
         writer.writeheader()
         
         for r in recipients:
-            # Filter logic
-            # 'sent' -> status == 'sent'
-            # 'pending' -> status == 'queued'
-            # 'failed' -> status == 'failed'
-            # 'all' -> all
             status = r.get('send_status', 'queued')
-            
             include = False
             if filter_type == 'all': include = True
             elif filter_type == 'sent' and status == 'sent': include = True
@@ -160,13 +175,53 @@ class JobManager:
             elif filter_type == 'remaining' and status == 'queued': include = True
             
             if include:
-                # Clean up dict for writer
                 row = {k: r.get(k, '') for k in keys}
                 writer.writerow(row)
                 
         return output.getvalue()
+        
+    def restore_active_jobs(self):
+        # Find jobs that were 'running' or 'paused' and restart their threads if needed
+        # Actually we only auto-restart 'running' ones. 'paused' stay paused.
+        keys = self.redis.keys("job:*")
+        count = 0
+        for k in keys:
+            try:
+                data = self.redis.get(k)
+                job = json.loads(data)
+                if job['status'] == 'running' or job['status'].startswith('Wait') or job['status'].startswith('Paused ('):
+                    # It was active. We need to respawn the thread.
+                    # Note: "Paused (Weekend)" is technically a running state waiting for time, versus "paused" (user action).
+                    # If it was user-paused ('paused'), we leave it.
+                    
+                    if job['status'] == 'paused': continue
+                    
+                    # Reset status to running to re-trigger loops logic safely
+                    self.set_status(job['id'], 'running')
+                    
+                    user_email = job['details'].get('user')
+                    # We need the password... stored in session which is lost?
+                    # The user encryption key is derived from password.
+                    # We cannot resume without the password if we don't store it reversibly.
+                    # BUT, for the demo, we are using session.
+                    # Limit: If server restarts, memory threads die. We need password to resume sending.
+                    # We don't have the user's password in Redis (only encrypted).
+                    # We'd need to store the password encrypted with a system key to auto-resume headless.
+                    # For this scope: We will mark them as "Paused (Server Restarted)" so user can resume.
+                    
+                    self.set_status(job['id'], 'paused')
+                    # We can't actually auto-resume without the password/credentials.
+                    # So we allow the user to Resume via UI? 
+                    # The UI 'Resume' checks session credentials. Perfect.
+                    count += 1
+            except:
+                pass
+        if count > 0:
+            print(f"Restored {count} jobs to PAUSED state (require user resume).")
 
 job_manager = JobManager()
+# Attempt restore (will just mark them paused so user can resume)
+job_manager.restore_active_jobs()
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
@@ -593,7 +648,12 @@ def bulk_send():
         })
     elif is_optimum:
         # User requested Optimum Drip Feed
-        job_id = job_manager.create_job('Optimum Drip', recipients, {'user': email_addr, 'subject': subject_template})
+        # Save HTML template in details for resume support
+        job_id = job_manager.create_job('Optimum Drip', recipients, {
+            'user': email_addr, 
+            'subject': subject_template,
+            'html_body': html_template 
+        })
         
         thread = threading.Thread(target=process_optimum_drip_feed, args=(
             job_id, email_addr, password, subject_template, html_template
@@ -607,7 +667,13 @@ def bulk_send():
         })
     else:
         # Background send (Manual Batch)
-        job_id = job_manager.create_job('Batch Send', recipients, {'user': email_addr, 'subject': subject_template})
+        job_id = job_manager.create_job('Batch Send', recipients, {
+            'user': email_addr, 
+            'subject': subject_template,
+            'html_body': html_template,
+            'batch_size': batch_size,
+            'time_delay': time_delay
+        })
 
         thread = threading.Thread(target=process_background_batch, args=(
             job_id, email_addr, password, subject_template, html_template, batch_size, time_delay
@@ -622,16 +688,55 @@ def bulk_send():
 
 @app.route('/api/jobs/<job_id>/action', methods=['POST'])
 def job_action(job_id):
-    email_addr, _ = get_stored_credentials()
+    email_addr, password = get_stored_credentials()
     if not email_addr: return jsonify({'error': 'Unauthorized'}), 401
     
     action = request.json.get('action')
     if action == 'pause':
         job_manager.set_status(job_id, 'paused')
-    elif action == 'resume':
-        job_manager.set_status(job_id, 'running')
+        
     elif action == 'cancel':
         job_manager.set_status(job_id, 'cancelled')
+        
+    elif action == 'resume':
+        # To resume, we need to restart the thread if it's dead
+        # We need to know if it's optimum or batch
+        job = job_manager.get_job(job_id)
+        if not job: return jsonify({'error': 'Job not found'}), 404
+        
+        # Check if already running? 
+        # Actually set_status sets it to running, but if the thread died (due to server restart), we need to respawn.
+        # The worker functions handle 'resuming' by skipping already sent.
+        
+        job_manager.set_status(job_id, 'running')
+        
+        subject_template = job['details'].get('subject')
+        # We need html_body... stored in details? We didn't store it.
+        # FIX: We need to store html_template in job details or arguments to resume properly.
+        # For now, we unfortunately can't resume fully without the template if it wasn't saved.
+        # Let's assume we update create_job to save the template too.
+        # But wait, create_job call didn't save html_template.
+        # Update: We will add html_template to details in create_job calls below.
+        html_template = job['details'].get('html_body', '')
+        
+        # Determine type
+        if job['type'] == 'Optimum Drip':
+             thread = threading.Thread(target=process_optimum_drip_feed, args=(
+                job_id, email_addr, password, subject_template, html_template
+            ))
+             thread.daemon = True
+             thread.start()
+        else:
+             # Batch
+             # default batch args? We didn't save them either.
+             # Assume defaults or save them.
+             batch_size = job['details'].get('batch_size', 0)
+             time_delay = job['details'].get('time_delay', 0)
+             thread = threading.Thread(target=process_background_batch, args=(
+                job_id, email_addr, password, subject_template, html_template, batch_size, time_delay
+            ))
+             thread.daemon = True
+             thread.start()
     
     return jsonify({'success': True})
 
@@ -662,7 +767,9 @@ def get_arizona_time():
     return datetime.now(timezone.utc) - timedelta(hours=7)
 
 def process_optimum_drip_feed(job_id, email_addr, password, subject_template, html_template):
-    recipients = job_manager.jobs[job_id]['recipients']
+    job = job_manager.get_job(job_id)
+    if not job: return
+    recipients = job['recipients']
     total = len(recipients)
     DAILY_LIMIT = 45 
     
@@ -765,7 +872,9 @@ def process_optimum_drip_feed(job_id, email_addr, password, subject_template, ht
         job_manager.update_progress(job_id, status='completed')
 
 def process_background_batch(job_id, email_addr, password, subject_template, html_template, batch_size, time_delay):
-    recipients = job_manager.jobs[job_id]['recipients']
+    job = job_manager.get_job(job_id)
+    if not job: return
+    recipients = job['recipients']
     total = len(recipients)
     if batch_size <= 0:
         batch_size = total
