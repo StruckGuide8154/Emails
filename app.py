@@ -15,6 +15,8 @@ import uuid
 import time
 import threading
 import random
+import csv
+import io
 from datetime import datetime, timedelta, timezone
 from crypto_utils import security_manager, UserSecurityContext
 from dotenv import load_dotenv
@@ -22,6 +24,149 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+
+# --- JOB MANAGER ---
+class JobManager:
+    def __init__(self):
+        self.jobs = {} # { job_id: { type, total, sent, failed, status, start_time, estimated_completion, details } }
+        self.lock = threading.Lock()
+
+    def create_job(self, job_type, recipients, details=None):
+        job_id = str(uuid.uuid4())
+        # Initialize recipients with default status
+        for r in recipients:
+            r['send_status'] = 'queued'
+            r['send_time'] = None
+            
+        with self.lock:
+            self.jobs[job_id] = {
+                'id': job_id,
+                'type': job_type,
+                'recipients': recipients, # Store full list for export
+                'total': len(recipients),
+                'sent': 0,
+                'failed': 0,
+                'status': 'running',
+                'start_time': datetime.now().isoformat(),
+                'last_update': datetime.now().isoformat(),
+                'last_email_sent': None, # {email, time}
+                'estimated_completion': 'Calculating...',
+                'details': details or {}
+            }
+        return job_id
+
+    def set_status(self, job_id, status):
+        with self.lock:
+            if job_id in self.jobs:
+                self.jobs[job_id]['status'] = status
+                self.jobs[job_id]['last_update'] = datetime.now().isoformat()
+
+    def get_status(self, job_id):
+        with self.lock:
+            return self.jobs.get(job_id, {}).get('status')
+
+    def mark_recipient(self, job_id, index, status, error=None):
+        with self.lock:
+            if job_id in self.jobs and index < len(self.jobs[job_id]['recipients']):
+                rec = self.jobs[job_id]['recipients'][index]
+                rec['send_status'] = status
+                rec['send_time'] = datetime.now().isoformat()
+                if error:
+                    rec['error'] = error
+                
+                # Update last sent info for UI
+                if status == 'sent':
+                    self.jobs[job_id]['last_email_sent'] = {
+                        'email': rec.get('email'),
+                        'time': datetime.now().strftime('%I:%M %p')
+                    }
+
+    def update_progress(self, job_id, sent_inc=0, failed_inc=0, status=None):
+        with self.lock:
+            if job_id in self.jobs:
+                job = self.jobs[job_id]
+                job['sent'] += sent_inc
+                job['failed'] += failed_inc
+                job['last_update'] = datetime.now().isoformat()
+                
+                if status:
+                    job['status'] = status
+                
+                # Simple completion estimate
+                if job['status'] == 'running' and job['sent'] > 0:
+                    elapsed = (datetime.now() - datetime.fromisoformat(job['start_time'])).total_seconds()
+                    avg_time_per_email = elapsed / job['sent']
+                    remaining = job['total'] - (job['sent'] + job['failed'])
+                    if remaining > 0:
+                        est_seconds = remaining * avg_time_per_email
+                        # Format readable string
+                        if est_seconds > 86400:
+                            job['estimated_completion'] = f"{int(est_seconds/86400)} days"
+                        elif est_seconds > 3600:
+                            job['estimated_completion'] = f"{int(est_seconds/3600)} hours"
+                        elif est_seconds > 60:
+                             job['estimated_completion'] = f"{int(est_seconds/60)} mins"
+                        else:
+                            job['estimated_completion'] = f"{int(est_seconds)} secs"
+
+    def get_user_jobs(self, email):
+        user_jobs = []
+        with self.lock:
+            for jid, job in self.jobs.items():
+                if job['details'].get('user') == email:
+                    # Calculate %
+                    processed = job['sent'] + job['failed']
+                    pct = int((processed / job['total']) * 100) if job['total'] > 0 else 0
+                    
+                    # Clone simple data to return (exclude heavy recipients list)
+                    j_copy = {k: v for k, v in job.items() if k != 'recipients'}
+                    j_copy['percent'] = pct
+                    user_jobs.append(j_copy)
+        return user_jobs
+        
+    def generate_csv(self, job_id, filter_type):
+        with self.lock:
+            if job_id not in self.jobs:
+                return None
+            job = self.jobs[job_id]
+            recipients = job['recipients']
+            
+        output = io.StringIO()
+        if not recipients:
+            return ""
+            
+        # Determine headers from first recipient keys + status fields
+        keys = list(recipients[0].keys())
+        # Ensure status fields are at end if not present
+        if 'send_status' not in keys: keys.append('send_status')
+        if 'send_time' not in keys: keys.append('send_time')
+        if 'error' not in keys: keys.append('error')
+        
+        writer = csv.DictWriter(output, fieldnames=keys)
+        writer.writeheader()
+        
+        for r in recipients:
+            # Filter logic
+            # 'sent' -> status == 'sent'
+            # 'pending' -> status == 'queued'
+            # 'failed' -> status == 'failed'
+            # 'all' -> all
+            status = r.get('send_status', 'queued')
+            
+            include = False
+            if filter_type == 'all': include = True
+            elif filter_type == 'sent' and status == 'sent': include = True
+            elif filter_type == 'failed' and status == 'failed': include = True
+            elif filter_type == 'remaining' and status == 'queued': include = True
+            
+            if include:
+                # Clean up dict for writer
+                row = {k: r.get(k, '') for k in keys}
+                writer.writerow(row)
+                
+        return output.getvalue()
+
+job_manager = JobManager()
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
@@ -410,6 +555,13 @@ def bulk_send_page():
         return redirect(url_for('login'))
     return render_template('bulk.html', email=email_addr)
 
+@app.route('/history')
+def history():
+    email_addr, _ = get_stored_credentials()
+    if not email_addr:
+        return redirect(url_for('login'))
+    return render_template('history.html', email=email_addr)
+
 @app.route('/api/bulk-send', methods=['POST'])
 def bulk_send():
     email_addr, password = get_stored_credentials()
@@ -441,124 +593,247 @@ def bulk_send():
         })
     elif is_optimum:
         # User requested Optimum Drip Feed
+        job_id = job_manager.create_job('Optimum Drip', recipients, {'user': email_addr, 'subject': subject_template})
+        
         thread = threading.Thread(target=process_optimum_drip_feed, args=(
-            email_addr, password, recipients, subject_template, html_template
+            job_id, email_addr, password, subject_template, html_template
         ))
         thread.daemon = True
         thread.start()
         
         return jsonify({
             'success': True, 
-            'message': 'Optimum Drip Feed started. This may take days depending on list size.',
-            'results': [] 
+            'message': 'Optimum Drip Feed started.',
         })
     else:
         # Background send (Manual Batch)
+        job_id = job_manager.create_job('Batch Send', recipients, {'user': email_addr, 'subject': subject_template})
+
         thread = threading.Thread(target=process_background_batch, args=(
-            email_addr, password, recipients, subject_template, html_template, batch_size, time_delay
+            job_id, email_addr, password, subject_template, html_template, batch_size, time_delay
         ))
         thread.daemon = True
         thread.start()
         
         return jsonify({
             'success': True, 
-            'message': 'Background sending started. Emails will be sent in batches.',
-            'results': [] 
+            'message': 'Background sending started.',
         })
+
+@app.route('/api/jobs/<job_id>/action', methods=['POST'])
+def job_action(job_id):
+    email_addr, _ = get_stored_credentials()
+    if not email_addr: return jsonify({'error': 'Unauthorized'}), 401
+    
+    action = request.json.get('action')
+    if action == 'pause':
+        job_manager.set_status(job_id, 'paused')
+    elif action == 'resume':
+        job_manager.set_status(job_id, 'running')
+    elif action == 'cancel':
+        job_manager.set_status(job_id, 'cancelled')
+    
+    return jsonify({'success': True})
+
+@app.route('/api/jobs/<job_id>/export/<filter_type>')
+def job_export(job_id, filter_type):
+    email_addr, _ = get_stored_credentials()
+    if not email_addr: return "Unauthorized", 401
+    
+    csv_data = job_manager.generate_csv(job_id, filter_type)
+    if csv_data is None:
+        return "Job not found", 404
+        
+    return jsonify({'csv': csv_data, 'filename': f'job_{job_id}_{filter_type}.csv'})
+
+@app.route('/api/jobs')
+def api_jobs():
+    email_addr, _ = get_stored_credentials()
+    if not email_addr:
+        return jsonify({'jobs': []})
+        
+    jobs = job_manager.get_user_jobs(email_addr)
+    # Sort running first, then newest
+    jobs.sort(key=lambda x: (x['status'] != 'running', x['start_time']), reverse=True) 
+    return jsonify({'jobs': jobs})
 
 def get_arizona_time():
     # Arizona is UTC-7 all year round (MST)
     return datetime.now(timezone.utc) - timedelta(hours=7)
 
-def process_optimum_drip_feed(email_addr, password, recipients, subject_template, html_template):
-    # Limits
-    DAILY_LIMIT = 45 # Safely between 40-50
-    # Hourly is implicit by the 8-15 min delay (4-7 per hour)
-    
+def process_optimum_drip_feed(job_id, email_addr, password, subject_template, html_template):
+    recipients = job_manager.jobs[job_id]['recipients']
     total = len(recipients)
+    DAILY_LIMIT = 45 
+    
+    # Check if we are resuming (find first non-sent/failed)
+    start_index = 0
+    for idx, r in enumerate(recipients):
+        if r['send_status'] == 'queued':
+            start_index = idx
+            break
+            
     sent_today = 0
     current_day_str = get_arizona_time().strftime('%Y-%m-%d')
     
-    i = 0
+    i = start_index
     while i < total:
+        # 0. Check Status (Pause/Cancel)
+        status = job_manager.get_status(job_id)
+        if status == 'paused':
+            time.sleep(2)
+            continue
+        if status == 'cancelled':
+            break
+            
         now_az = get_arizona_time()
         
-        # 1. Check Weekend (0=Mon, 6=Sun)
-        if now_az.weekday() >= 5: # Saturday or Sunday
-            # Sleep until Monday 9:00 AM
-            # Calculate seconds until next Monday 9am
-            days_ahead = 7 - now_az.weekday() # If Sat(5) -> 2 days. If Sun(6) -> 1 day.
+        # 1. Check Weekend
+        if now_az.weekday() >= 5: 
+            days_ahead = 7 - now_az.weekday()
             next_monday = (now_az + timedelta(days=days_ahead)).replace(hour=9, minute=0, second=0, microsecond=0)
             sleep_seconds = (next_monday - now_az).total_seconds()
-            print(f"Weekend pause. Sleeping {sleep_seconds}s until Monday.")
+            
+            job_manager.update_progress(job_id, status=f"Paused (Weekend). Resuming Mon 9am.")
             time.sleep(max(60, sleep_seconds))
+            job_manager.update_progress(job_id, status="running")
             continue
             
         # 2. Check Daily Limit
         today_str = now_az.strftime('%Y-%m-%d')
         if today_str != current_day_str:
-            # New day, reset counter
             current_day_str = today_str
             sent_today = 0
             
         if sent_today >= DAILY_LIMIT:
-            # Sleep until tomorrow 9:00 AM
             tomorrow = (now_az + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
             sleep_seconds = (tomorrow - now_az).total_seconds()
-            print(f"Daily limit reached ({DAILY_LIMIT}). Sleeping {sleep_seconds}s until tomorrow.")
+            
+            job_manager.update_progress(job_id, status=f"Paused (Daily Limit). Resuming {tomorrow.strftime('%a 9am')}")
             time.sleep(max(60, sleep_seconds))
+            job_manager.update_progress(job_id, status="running")
             continue
             
-        # 3. Check Time Window (9 AM - 5 PM)
+        # 3. Check Time Window
         current_hour = now_az.hour
         if current_hour < 9:
-            # Too early, sleep until 9 AM
             start_time = now_az.replace(hour=9, minute=0, second=0, microsecond=0)
             sleep_seconds = (start_time - now_az).total_seconds()
-            print(f"Too early. Sleeping {sleep_seconds}s until 9 AM.")
+            
+            job_manager.update_progress(job_id, status="Paused (Outside Hours). Resuming 9am.")
             time.sleep(max(60, sleep_seconds))
+            job_manager.update_progress(job_id, status="running")
             continue
         elif current_hour >= 17:
-             # Too late, sleep until tomorrow 9 AM
             tomorrow = (now_az + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
             sleep_seconds = (tomorrow - now_az).total_seconds()
-            print(f"Too late (After 5 PM). Sleeping {sleep_seconds}s until tomorrow.")
+            
+            job_manager.update_progress(job_id, status="Paused (Outside Hours). Resuming 9am.")
             time.sleep(max(60, sleep_seconds))
+            job_manager.update_progress(job_id, status="running")
             continue
             
-        # 4. Ready to Send
+        # 4. SEND
         recipient = recipients[i]
-        # Send single email
-        send_email_batch(email_addr, password, [recipient], subject_template, html_template)
+        res = send_email_batch(email_addr, password, [recipient], subject_template, html_template)
+        
+        success = 1 if res and res[0]['status'] == 'sent' else 0
+        fail = 1 - success
+        
+        status_code = 'sent' if success else 'failed'
+        error_msg = res[0].get('message') if fail else None
+        
+        job_manager.mark_recipient(job_id, i, status_code, error_msg)
+        job_manager.update_progress(job_id, sent_inc=success, failed_inc=fail)
         
         i += 1
         sent_today += 1
         
-        # 5. Delay Confirmation (User Notice: 8-15 mins)
+        # 5. Delay
         if i < total:
-            # Random delay 480s (8m) to 900s (15m)
             delay = random.randint(480, 900)
-            print(f"Sent {i}/{total}. Sleeping {delay}s...")
-            time.sleep(delay)
+            # Update estimated time manually for accurate 'Wait state'
+            job_manager.jobs[job_id]['estimated_completion'] = f"Wait {int(delay/60)}m..."
+            
+            # Sleep in small chunks to allow pause/cancel interrupt
+            sleep_chunks = int(delay / 2)
+            for _ in range(sleep_chunks):
+                if job_manager.get_status(job_id) in ['paused', 'cancelled']: break
+                time.sleep(2)
+            
+    if job_manager.get_status(job_id) != 'cancelled':
+        job_manager.update_progress(job_id, status='completed')
 
-def process_background_batch(email_addr, password, recipients, subject_template, html_template, batch_size, time_delay):
+def process_background_batch(job_id, email_addr, password, subject_template, html_template, batch_size, time_delay):
+    recipients = job_manager.jobs[job_id]['recipients']
     total = len(recipients)
-    # If batch_size is 0 (all at once) but delay is set, treat as one big batch (or invalid combination? 
-    # User said "0 being all at once". If delay is set but batch is 0, it just sends all at once instantly. 
-    # The delay only applies BETWEEN batches. So effectively immediate.)
     if batch_size <= 0:
         batch_size = total
         
-    for i in range(0, total, batch_size):
-        batch = recipients[i : i + batch_size]
+    i = 0
+    # Resume logic if needed (check first queued)
+    for idx, r in enumerate(recipients):
+        if r['send_status'] == 'queued':
+            i = idx
+            break
+            
+    while i < total:
+        # Check Status
+        status = job_manager.get_status(job_id)
+        if status == 'paused':
+            time.sleep(2)
+            continue
+        if status == 'cancelled':
+            break
+
+        # Calculate batch end
+        batch_end = min(i + batch_size, total)
+        batch = recipients[i : batch_end]
         
-        # Connect fresh for each batch
-        # We process the batch synchronously
-        send_email_batch(email_addr, password, batch, subject_template, html_template)
+        # Filter only queued in this range (in case of weird resume state)
+        batch_to_send = [r for r in batch if r.get('send_status') == 'queued']
+        
+        if batch_to_send:
+            res = send_email_batch(email_addr, password, batch_to_send, subject_template, html_template)
+            
+            # Map results back to update status
+            success_count = 0
+            fail_count = 0
+            
+            for res_item in res:
+                # Find matching recipient in original list by email (assuming unique emails in batch)
+                # Or better, rely on order if send_email_batch preserves it (it does)
+                # But safer to match by email
+                target_email = res_item.get('email')
+                found_idx = -1
+                for bi in range(i, batch_end):
+                    if recipients[bi]['email'] == target_email:
+                        found_idx = bi
+                        break
+                
+                if found_idx != -1:
+                    status_code = res_item['status'] # sent/failed/skipped
+                    error_msg = res_item.get('message')
+                    job_manager.mark_recipient(job_id, found_idx, status_code, error_msg)
+                    
+                    if status_code == 'sent': success_count += 1
+                    elif status_code == 'failed': fail_count += 1
+            
+            job_manager.update_progress(job_id, sent_inc=success_count, failed_inc=fail_count)
+        
+        i += batch_size
         
         # Wait if there are more batches
-        if i + batch_size < total:
-            time.sleep(time_delay * 60)
+        if i < total:
+            job_manager.jobs[job_id]['estimated_completion'] = f"Wait {time_delay}m..."
+            # Sleep in chunks to allow iterrupt
+            sleep_chunks = int(time_delay * 60 / 2)
+            for _ in range(sleep_chunks):
+                 if job_manager.get_status(job_id) in ['paused', 'cancelled']: break
+                 time.sleep(2)
+            
+    if job_manager.get_status(job_id) != 'cancelled':
+        job_manager.update_progress(job_id, status='completed')
 
 def send_email_batch(email_addr, password, recipient_list, subject_template, html_template):
     server = get_smtp_connection(email_addr, password)

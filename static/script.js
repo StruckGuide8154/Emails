@@ -9,7 +9,91 @@ document.addEventListener('DOMContentLoaded', () => {
     setupModal();
     setupCompose();
     setupInfiniteScroll();
+    startJobPolling();
 });
+
+function startJobPolling() {
+    fetchJobs();
+    setInterval(fetchJobs, 5000); // Poll every 5 seconds
+}
+
+async function fetchJobs() {
+    try {
+        const response = await fetch('/api/jobs');
+        const data = await response.json();
+        const list = document.getElementById('jobsList');
+
+        if (!data.jobs || data.jobs.length === 0) {
+            list.innerHTML = '<div style="color:var(--text-secondary);font-size:0.8rem;text-align:center;padding:10px;">No active sending jobs.</div>';
+            return;
+        }
+
+        list.innerHTML = '';
+        data.jobs.forEach(job => {
+            const item = document.createElement('div');
+            item.style.background = 'rgba(0,0,0,0.25)';
+            item.style.borderRadius = 'var(--radius-sm)';
+            item.style.padding = '8px 12px';
+            item.style.fontSize = '0.8rem';
+
+            const isRunning = job.status === 'running' || job.status.startsWith('Wait');
+            const isPaused = job.status === 'paused' || job.status.startsWith('Paused');
+            const isActive = isRunning || isPaused;
+            const statusColor = isActive ? (isPaused ? 'var(--warning)' : 'var(--primary-color)') : (job.status === 'completed' ? 'var(--success)' : 'var(--error)');
+
+            const pct = job.percent || 0;
+
+            let actions = '';
+            if (isActive) {
+                actions = `
+                    <div style="display:flex; justify-content: flex-end; gap:6px; margin-top:6px; pt-1; border-top:1px solid rgba(255,255,255,0.05);">
+                        ${isPaused ?
+                        `<button onclick="controlJob('${job.id}', 'resume')" class="glass-btn glass-btn-xs" title="Resume"><i class="ri-play-fill"></i></button>` :
+                        `<button onclick="controlJob('${job.id}', 'pause')" class="glass-btn glass-btn-xs" title="Pause"><i class="ri-pause-circle-line"></i></button>`
+                    }
+                        <button onclick="controlJob('${job.id}', 'cancel')" class="glass-btn glass-btn-xs" title="Cancel" style="color:var(--error);"><i class="ri-stop-circle-line"></i></button>
+                    </div>
+                `;
+            }
+
+            item.innerHTML = `
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                    <span style="font-weight:600;color:var(--text-secondary);">${job.type}</span>
+                    <span style="color:${statusColor};font-size:0.75rem;">${job.status}</span>
+                </div>
+                <div style="margin-bottom:4px;color:var(--text-secondary);font-size:0.75rem;display:flex;justify-content:space-between;">
+                   <span>${job.sent}/${job.total} sent</span>
+                   <span>${pct}%</span>
+                </div>
+                <div style="height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;margin-bottom:6px;">
+                    <div style="width:${pct}%;height:100%;background:${statusColor};transition:width 0.5s;"></div>
+                </div>
+                <div style="font-size:0.7rem;color:var(--text-secondary);opacity:0.8;">
+                   <i class="ri-timer-line"></i> ETA: ${job.estimated_completion || '?'}
+                </div>
+                ${actions}
+            `;
+            list.appendChild(item);
+        });
+
+    } catch (e) {
+        console.error("Job poll error", e);
+    }
+}
+
+async function controlJob(id, action) {
+    if (!confirm(`Are you sure you want to ${action} this job?`)) return;
+    try {
+        await fetch(`/api/jobs/${id}/action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action })
+        });
+        fetchJobs();
+    } catch (e) {
+        alert('Action failed');
+    }
+}
 
 function setupInfiniteScroll() {
     const trigger = document.getElementById('loadMoreTrigger');

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 </head>
+
 <body>
     <div class="dash-shell">
         <header class="dash-header glass">
@@ -32,30 +34,38 @@
                 </div>
 
                 <div class="sidebar-actions">
-                    <a href="/bulk" class="glass-btn"><i class="ri-mail-send-line"></i> Bulk Send</a>
-                    <button class="glass-btn" id="composeBtn"><i class="ri-edit-line"></i> Compose</button>
+                    <a href="/bulk" class="glass-btn"><i class="ri-mail-send-line"></i> New Bulk Send</a>
                 </div>
-            </aside>
 
-            <!-- Email List -->
-            <section class="glass list-panel">
-                <div class="list-header">
-                    <h3 id="folderTitle">Inbox</h3>
-                    <button class="glass-btn glass-btn-sm" onclick="refreshEmails()"><i class="ri-refresh-line"></i></button>
-                </div>
-                <div id="emailList" class="list-scroll"></div>
-                <div id="loadMoreTrigger" class="list-footer">Load more</div>
-            </section>
-
-            <!-- Email Detail -->
-            <section class="glass detail-panel" id="emailDetailView">
-                <div class="detail-panel-inner">
-                    <div class="detail-placeholder">
-                        <i class="ri-mail-open-line"></i>
-                        <p>Select an email to read</p>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border);">
+                    <small
+                        style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px; padding-left: 10px;">Active
+                        Jobs</small>
+                    <div id="jobsList" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Jobs injected here -->
                     </div>
                 </div>
-            </section>
+
+                <!-- Email List -->
+                <section class="glass list-panel">
+                    <div class="list-header">
+                        <h3 id="folderTitle">Inbox</h3>
+                        <button class="glass-btn glass-btn-sm" onclick="refreshEmails()"><i
+                                class="ri-refresh-line"></i></button>
+                    </div>
+                    <div id="emailList" class="list-scroll"></div>
+                    <div id="loadMoreTrigger" class="list-footer">Load more</div>
+                </section>
+
+                <!-- Email Detail -->
+                <section class="glass detail-panel" id="emailDetailView">
+                    <div class="detail-panel-inner">
+                        <div class="detail-placeholder">
+                            <i class="ri-mail-open-line"></i>
+                            <p>Select an email to read</p>
+                        </div>
+                    </div>
+                </section>
         </main>
     </div>
 
@@ -67,12 +77,14 @@
             <form id="composeForm" class="compose-form">
                 <input type="email" id="toEmail" name="to" class="glass-input" placeholder="To:" required>
                 <input type="text" id="subject" name="subject" class="glass-input" placeholder="Subject:" required>
-                <textarea id="body" name="body" class="glass-input" placeholder="Message content..." required></textarea>
+                <textarea id="body" name="body" class="glass-input" placeholder="Message content..."
+                    required></textarea>
                 <div style="border: 1px dashed var(--glass-border); padding: 10px; border-radius: 8px;">
                     <label for="attachments" style="cursor: pointer; font-size: 0.85rem; color: var(--text-secondary);">
                         <i class="ri-attachment-line"></i> Add Attachments
                     </label>
-                    <input type="file" id="attachments" name="attachments" multiple style="display: block; margin-top: 5px; color: white; font-size: 0.8rem;">
+                    <input type="file" id="attachments" name="attachments" multiple
+                        style="display: block; margin-top: 5px; color: white; font-size: 0.8rem;">
                 </div>
                 <div style="display: flex; justify-content: flex-end;">
                     <button type="submit" class="glass-btn">Send <i class="ri-send-plane-fill"></i></button>
@@ -83,4 +95,5 @@
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
+
 </html>

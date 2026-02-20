@@ -1,0 +1,142 @@
+{% extends "dashboard.html" %}
+
+{% block content %}
+<div class="dash-shell">
+    <header class="dash-header glass">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <a href="/dashboard" class="glass-btn glass-btn-sm"><i class="ri-arrow-left-line"></i></a>
+            <div class="logo"><i class="ri-history-line"></i> Job History</div>
+        </div>
+        <div class="user-info">
+            <span class="text-muted text-sm">{{ email }}</span>
+            <div class="avatar">{{ email[0].upper() }}</div>
+        </div>
+    </header>
+
+    <div style="padding: 20px; flex: 1; overflow-y: auto;">
+        <div class="glass" style="padding: 20px; min-height: 200px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0;">Your Sending Jobs</h3>
+                <button class="glass-btn glass-btn-sm" onclick="loadHistory()"><i class="ri-refresh-line"></i>
+                    Refresh</button>
+            </div>
+
+            <div class="table-container">
+                <table class="glass-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--glass-border); text-align: left;">
+                            <th style="padding: 12px;">Type</th>
+                            <th style="padding: 12px;">Started</th>
+                            <th style="padding: 12px;">Status</th>
+                            <th style="padding: 12px;">Progress</th>
+                            <th style="padding: 12px;">Last Sent</th>
+                            <th style="padding: 12px;">Export/Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr>
+                            <td colspan="6" style="padding: 20px; text-align: center;">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadHistory() {
+        try {
+            const response = await fetch('/api/jobs');
+            const data = await response.json();
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+
+            if (!data.jobs || data.jobs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--text-secondary);">No history found</td></tr>';
+                return;
+            }
+
+            data.jobs.forEach(job => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+
+                const pct = job.percent || 0;
+                const statusColor = getStatusColor(job.status);
+                const lastSent = job.last_email_sent ?
+                    `<div style="font-size:0.8rem;">${job.last_email_sent.email}<br><span style="color:var(--text-secondary);">${job.last_email_sent.time}</span></div>` :
+                    '<span style="color:var(--text-secondary);">-</span>';
+
+                let actions = `
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <a href="/api/jobs/${job.id}/export/sent" target="_blank" class="glass-btn glass-btn-sm" title="Export Sent CSV"><i class="ri-file-download-line"></i> Sent</a>
+                    <a href="/api/jobs/${job.id}/export/remaining" target="_blank" class="glass-btn glass-btn-sm" title="Export Remaining CSV"><i class="ri-file-list-3-line"></i> Rem.</a>
+            `;
+
+                // Add control buttons if active
+                const isActive = ['running', 'paused'].includes(job.status) || job.status.startsWith('Wait') || job.status.startsWith('Paused');
+
+                if (isActive) {
+                    if (job.status === 'paused' || job.status.startsWith('Paused')) {
+                        actions += `<button onclick="controlJob('${job.id}', 'resume')" class="glass-btn glass-btn-sm" style="border-color:var(--success);"><i class="ri-play-fill"></i></button>`;
+                    } else {
+                        actions += `<button onclick="controlJob('${job.id}', 'pause')" class="glass-btn glass-btn-sm" style="border-color:var(--warning);"><i class="ri-pause-circle-line"></i></button>`;
+                    }
+                    actions += `<button onclick="controlJob('${job.id}', 'cancel')" class="glass-btn glass-btn-sm" style="border-color:var(--error);"><i class="ri-stop-circle-line"></i></button>`;
+                }
+
+                actions += `</div>`;
+
+                tr.innerHTML = `
+                <td style="padding: 12px;"><strong>${job.type}</strong><div style="font-size:0.8rem;color:var(--text-secondary)">${job.details.subject || ''}</div></td>
+                <td style="padding: 12px; font-size: 0.9rem;">${formatDateRaw(job.start_time)}</td>
+                <td style="padding: 12px;"><span style="color:${statusColor}">${job.status}</span></td>
+                <td style="padding: 12px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="flex:1;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;min-width:60px;">
+                            <div style="width:${pct}%;height:100%;background:${statusColor};border-radius:3px;"></div>
+                        </div>
+                        <span style="font-size:0.8rem;">${pct}%</span>
+                    </div>
+                    <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">${job.sent} / ${job.total}</div>
+                </td>
+                <td style="padding: 12px;">${lastSent}</td>
+                <td style="padding: 12px;">${actions}</td>
+            `;
+                tbody.appendChild(tr);
+            });
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function controlJob(id, action) {
+        if (!confirm(`Are you sure you want to ${action} this job?`)) return;
+        try {
+            await fetch(`/api/jobs/${id}/action`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action })
+            });
+            loadHistory();
+        } catch (e) {
+            alert('Action failed');
+        }
+    }
+
+    function getStatusColor(status) {
+        if (status === 'completed') return 'var(--success)';
+        if (status === 'cancelled') return 'var(--error)';
+        if (status === 'failed') return 'var(--error)';
+        if (status === 'paused' || status.startsWith('Paused')) return 'var(--warning)';
+        return 'var(--primary-color)';
+    }
+
+    function formatDateRaw(dateStr) {
+        if (!dateStr) return '';
+        return new Date(dateStr).toLocaleString();
+    }
+
+    document.addEventListener('DOMContentLoaded', loadHistory);
+</script>
+{% endblock %}
