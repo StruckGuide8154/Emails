@@ -387,7 +387,7 @@ def api_emails(folder):
 
         # Use UID search with SINCE filter for speed — only fetch recent emails
         # instead of enumerating the entire 5-year mailbox
-        since_date = (datetime.datetime.now() - datetime.timedelta(days=90)).strftime("%d-%b-%Y")
+        since_date = (datetime.now() - timedelta(days=90)).strftime("%d-%b-%Y")
         status, messages = mail.uid('search', None, f'(SINCE "{since_date}")')
         all_uids = messages[0].split() if messages[0] else []
 
